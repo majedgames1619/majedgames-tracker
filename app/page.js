@@ -4,41 +4,43 @@ import { useState, useEffect } from 'react';
 export default function Home() {
   const [trophies, setTrophies] = useState([]);
 
-  // For now, this is your list of data from your AC TEST sheet
   useEffect(() => {
-    setTrophies([
-      { id: 1, type: 'Platinum', name: 'Master Assassin' },
-      { id: 2, type: 'Gold', name: 'Committed to the Cause' },
-      { id: 3, type: 'Silver', name: 'Barfly' },
-      { id: 14, type: 'Bronze', name: 'Lively Havana' }
-      // ... your other trophies will appear here
-    ]);
+    // This fetches your actual published spreadsheet data
+    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSH5lbwrDIqmc4DImgbz-KX5NzLiaKUHTeOyceh1HfhweR3xnEzH-38VwegvLs5Wmc9rGLIcF9BjP35/pub?output=csv';
+    
+    fetch(url)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.split('\n').slice(1); // Skip header row
+        const data = rows.map(row => {
+          const cols = row.split(',');
+          return { id: cols[0], type: cols[1], name: cols[2] };
+        }).filter(t => t.name);
+        setTrophies(data);
+      });
   }, []);
+
+  const getCount = (type) => trophies.filter(t => t.type?.trim() === type).length;
 
   return (
     <div className="relative w-full min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-cyan-400 mb-8">MAJEDGAMES Trophy Hub</h1>
         
-        {/* Trophy Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {['Platinum', 'Gold', 'Silver', 'Bronze'].map((type) => (
             <div key={type} className="p-6 bg-slate-900 border border-slate-700 rounded-xl text-center">
-              <div className="text-3xl font-bold">{trophies.filter(t => t.type === type).length}</div>
+              <div className="text-3xl font-bold">{getCount(type)}</div>
               <div className="text-xs uppercase tracking-widest text-slate-400">{type}</div>
             </div>
           ))}
         </div>
 
-        {/* Full Trophy List */}
         <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-700 font-bold text-cyan-400">All Trophies</div>
-          {trophies.map((trophy) => (
-            <div key={trophy.id} className="flex justify-between p-4 border-b border-slate-800 hover:bg-slate-800">
+          {trophies.map((trophy, i) => (
+            <div key={i} className="flex justify-between p-4 border-b border-slate-800">
               <span>{trophy.name}</span>
-              <span className={`text-xs px-2 py-1 rounded ${trophy.type === 'Platinum' ? 'bg-cyan-900' : 'bg-slate-700'}`}>
-                {trophy.type}
-              </span>
+              <span className="text-xs text-slate-400">{trophy.type}</span>
             </div>
           ))}
         </div>
