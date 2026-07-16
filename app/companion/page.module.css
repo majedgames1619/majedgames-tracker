@@ -268,6 +268,7 @@
   overflow: hidden;
   color: white;
   text-align: left;
+  text-decoration: none;
   flex-direction: column;
   grid-column: span 2;
   border: 1px solid rgba(255, 255, 255, 0.085);
@@ -520,6 +521,500 @@
   text-align: right;
 }
 
+.flowView {
+  min-height: calc(100vh - 152px);
+  padding: 30px 0 70px;
+}
+
+.flowNavigation,
+.navigationActions,
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+}
+
+.flowNavigation {
+  min-height: 40px;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.breadcrumbs {
+  gap: 9px;
+  color: #59647e;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.breadcrumbs a,
+.navigationActions a {
+  color: #8d98b4;
+  text-decoration: none;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.breadcrumbs a:hover,
+.breadcrumbs a:focus-visible,
+.navigationActions a:hover,
+.navigationActions a:focus-visible {
+  color: white;
+}
+
+.breadcrumbs strong {
+  color: #707d9d;
+}
+
+.navigationActions {
+  gap: 10px;
+}
+
+.navigationActions a {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.navigationActions a:hover,
+.navigationActions a:focus-visible {
+  border-color: rgba(132, 121, 255, 0.42);
+  background: rgba(115, 104, 255, 0.08);
+  outline: none;
+}
+
+.navigationActions svg {
+  width: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flowHero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 70px 0 42px;
+}
+
+.flowHero h1 {
+  margin: 18px 0 12px;
+  font-size: clamp(42px, 5vw, 68px);
+  font-weight: 720;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.flowHero > div > p:last-child {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.prototypeBadge {
+  padding: 9px 13px;
+  color: #9ba8c9;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.objectiveGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.objectiveCard {
+  position: relative;
+  display: flex;
+  min-height: 220px;
+  padding: 20px;
+  overflow: hidden;
+  color: #69748e;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 23px;
+  background: rgba(13, 17, 32, 0.7);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+  text-decoration: none;
+}
+
+.objectiveCard::after {
+  position: absolute;
+  right: -50px;
+  bottom: -60px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(113, 91, 255, 0.08);
+  content: "";
+  filter: blur(35px);
+}
+
+.objectiveActive {
+  color: white;
+  border-color: rgba(145, 104, 255, 0.4);
+  background: linear-gradient(150deg, rgba(82, 70, 172, 0.24), rgba(12, 15, 30, 0.94));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.22), inset 0 1px rgba(255, 255, 255, 0.06);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.objectiveActive:hover,
+.objectiveActive:focus-visible {
+  border-color: rgba(169, 126, 255, 0.75);
+  box-shadow: 0 26px 58px rgba(0, 0, 0, 0.34), 0 0 32px rgba(126, 91, 255, 0.13);
+  outline: none;
+  transform: translateY(-4px);
+}
+
+.objectiveNumber {
+  align-self: flex-end;
+  color: rgba(255, 255, 255, 0.16);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+}
+
+.objectiveIcon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-top: 8px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.objectiveIcon svg,
+.sphereEmblem svg {
+  width: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.objectiveActive .objectiveIcon {
+  color: #a884ff;
+  border-color: rgba(168, 132, 255, 0.32);
+  background: rgba(136, 94, 255, 0.1);
+}
+
+.objectiveCopy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.objectiveCopy strong {
+  color: #8b96b0;
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
+.objectiveActive .objectiveCopy strong {
+  color: white;
+}
+
+.comingNext,
+.available {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.comingNext {
+  color: #59647d;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.available {
+  color: #b995ff;
+  border: 1px solid rgba(185, 149, 255, 0.25);
+  background: rgba(142, 95, 255, 0.09);
+}
+
+.objectiveCard > svg {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1;
+  width: 18px;
+  fill: none;
+  stroke: #a884ff;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.calculatorHero {
+  align-items: center;
+  padding-bottom: 34px;
+}
+
+.sphereEmblem {
+  display: grid;
+  width: 94px;
+  height: 94px;
+  color: #a987ff;
+  place-items: center;
+  border: 1px solid rgba(169, 135, 255, 0.32);
+  border-radius: 29px;
+  background: linear-gradient(145deg, rgba(133, 87, 255, 0.18), rgba(45, 72, 178, 0.08));
+  box-shadow: 0 22px 55px rgba(82, 57, 188, 0.22), inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.sphereEmblem svg {
+  width: 49px;
+}
+
+.prototypeNotice {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding: 14px 17px;
+  color: #8994ae;
+  border: 1px solid rgba(129, 146, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(68, 82, 156, 0.07);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.prototypeNotice strong {
+  flex: 0 0 auto;
+  color: #aeb8d2;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.calculator {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.34fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.readinessPanel {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  min-height: 185px;
+  padding: 25px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  background: linear-gradient(150deg, rgba(26, 31, 56, 0.9), rgba(12, 15, 29, 0.94));
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.readinessPanel p {
+  margin: 0 0 10px;
+  color: #7d89a5;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.readinessPanel h2 {
+  max-width: 170px;
+  margin: 0;
+  font-size: 21px;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.notReady { color: #c3a2ff; }
+.ready { color: #65e1b1; }
+
+.readinessRing {
+  display: grid;
+  width: 74px;
+  height: 74px;
+  place-content: center;
+  flex: 0 0 auto;
+  color: #b18aff;
+  border: 5px solid rgba(156, 112, 255, 0.16);
+  border-top-color: #9e72ff;
+  border-radius: 50%;
+  text-align: center;
+}
+
+.readinessRing strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.readinessRing small {
+  margin-top: 2px;
+  color: #69748e;
+  font-size: 9px;
+}
+
+.ringReady {
+  color: #65e1b1;
+  border-color: #53cea1;
+  box-shadow: 0 0 22px rgba(83, 206, 161, 0.16);
+}
+
+.materialList {
+  display: grid;
+  gap: 12px;
+}
+
+.materialCard {
+  display: grid;
+  min-height: 150px;
+  padding: 22px 24px;
+  align-items: center;
+  grid-template-columns: minmax(220px, 1fr) minmax(360px, 1.25fr);
+  gap: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 22px;
+  background: rgba(14, 18, 34, 0.78);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.03);
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.materialReady {
+  border-color: rgba(83, 206, 161, 0.26);
+  background: linear-gradient(145deg, rgba(48, 130, 103, 0.09), rgba(14, 18, 34, 0.78));
+}
+
+.materialIdentity {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.materialStatus {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  color: #70e0b5;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.materialReady .materialStatus {
+  border-color: rgba(83, 206, 161, 0.3);
+  background: rgba(83, 206, 161, 0.1);
+}
+
+.materialIdentity p {
+  margin: 0 0 6px;
+  color: #59647e;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.materialIdentity h3 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
+.quantityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 15px;
+  background: rgba(5, 8, 17, 0.34);
+}
+
+.quantityGrid > div {
+  display: grid;
+  min-height: 82px;
+  padding: 13px 16px;
+  align-content: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quantityGrid > div:last-child {
+  border-right: 0;
+}
+
+.quantityGrid dt {
+  margin-bottom: 7px;
+  color: #626e89;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.quantityGrid dd {
+  margin: 0;
+  color: #dce2f2;
+  font-size: 20px;
+  font-weight: 780;
+}
+
+.haveField input {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 7px;
+  color: white;
+  border: 1px solid rgba(136, 117, 255, 0.28);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(116, 87, 255, 0.09);
+  font: inherit;
+  font-size: 17px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.haveField input:focus {
+  border-color: #9a7cff;
+  box-shadow: 0 0 0 3px rgba(137, 105, 255, 0.12);
+}
+
+.missingField dd {
+  color: #c19eff;
+}
+
+.materialReady .missingField dd {
+  color: #65e1b1;
+}
+
 .footer {
   display: flex;
   align-items: center;
@@ -552,6 +1047,19 @@
   .decisionCard:last-child {
     grid-column: 1 / -1;
   }
+
+  .objectiveGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calculator {
+    grid-template-columns: 1fr;
+  }
+
+  .readinessPanel {
+    position: static;
+    min-height: 140px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -570,12 +1078,48 @@
     display: none;
   }
 
+  .flowView {
+    padding-top: 20px;
+  }
+
+  .flowNavigation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .navigationActions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .navigationActions a {
+    justify-content: center;
+  }
+
+  .flowHero {
+    align-items: flex-start;
+    padding: 50px 0 35px;
+    flex-direction: column;
+  }
+
+  .prototypeBadge,
+  .sphereEmblem {
+    display: none;
+  }
+
+  .prototypeNotice {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .hero {
     padding: 56px 0 45px;
   }
 
   .decisionGrid,
-  .progressGrid {
+  .progressGrid,
+  .objectiveGrid {
     grid-template-columns: 1fr;
   }
 
@@ -587,6 +1131,23 @@
     grid-column: auto;
   }
 
+  .objectiveCard {
+    min-height: 190px;
+  }
+
+  .materialCard {
+    grid-template-columns: 1fr;
+  }
+
+  .quantityGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quantityGrid > div {
+    min-height: 75px;
+    padding: 10px;
+  }
+
   .footer {
     gap: 12px;
     flex-direction: column;
@@ -595,6 +1156,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .decisionCard,
+  .objectiveActive,
+  .breadcrumbs a,
+  .navigationActions a,
+  .materialCard,
+  .haveField input,
   .cardGlow,
   .cardAction svg {
     transition: none;
