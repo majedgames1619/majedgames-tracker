@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import AncientSphereCalculator from './AncientSphereCalculator';
 import styles from './page.module.css';
 
 export const metadata = {
@@ -67,7 +69,20 @@ const recentProgress = [
   },
 ];
 
-export default function CompanionPage() {
+const combatObjectives = [
+  'Legendary Sphere',
+  'Ultimate Sphere',
+  'Ancient Sphere',
+  'Rocket Ammo',
+  'Missile Ammo',
+  'Armor Upgrade',
+  'Shield Upgrade',
+];
+
+export default async function CompanionPage({ searchParams }) {
+  const params = await searchParams;
+  const view = params?.view;
+
   return (
     <main className={styles.shell}>
       <div className={styles.ambientTop} aria-hidden="true" />
@@ -94,6 +109,12 @@ export default function CompanionPage() {
           </div>
         </header>
 
+        {view === 'prepare-combat' ? (
+          <PrepareCombatView />
+        ) : view === 'ancient-sphere' ? (
+          <AncientSphereView />
+        ) : (
+          <>
         <section className={styles.hero} aria-labelledby="companion-heading">
           <div>
             <p className={styles.eyebrow}>
@@ -123,29 +144,7 @@ export default function CompanionPage() {
 
           <div className={styles.decisionGrid}>
             {decisions.map((decision) => (
-              <button
-                className={`${styles.decisionCard} ${styles[decision.accent]}`}
-                type="button"
-                key={decision.title}
-              >
-                <span className={styles.cardGlow} aria-hidden="true" />
-                <span className={styles.cardTopline}>
-                  <span className={styles.iconWrap}>
-                    <DecisionIcon name={decision.icon} />
-                  </span>
-                  <span className={styles.cardNumber}>{decision.number}</span>
-                </span>
-                <span className={styles.cardCopy}>
-                  <strong>{decision.title}</strong>
-                  <span>{decision.description}</span>
-                </span>
-                <span className={styles.cardAction}>
-                  Choose path
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M4 10h11M11 6l4 4-4 4" />
-                  </svg>
-                </span>
-              </button>
+              <DecisionCard decision={decision} key={decision.title} />
             ))}
           </div>
         </section>
@@ -184,6 +183,8 @@ export default function CompanionPage() {
             ))}
           </div>
         </section>
+          </>
+        )}
 
         <footer className={styles.footer}>
           <span>MajedGames Companion</span>
@@ -191,6 +192,166 @@ export default function CompanionPage() {
         </footer>
       </div>
     </main>
+  );
+}
+
+function DecisionCard({ decision }) {
+  const cardContent = (
+    <>
+      <span className={styles.cardGlow} aria-hidden="true" />
+      <span className={styles.cardTopline}>
+        <span className={styles.iconWrap}>
+          <DecisionIcon name={decision.icon} />
+        </span>
+        <span className={styles.cardNumber}>{decision.number}</span>
+      </span>
+      <span className={styles.cardCopy}>
+        <strong>{decision.title}</strong>
+        <span>{decision.description}</span>
+      </span>
+      <span className={styles.cardAction}>
+        Choose path
+        <ArrowIcon />
+      </span>
+    </>
+  );
+
+  if (decision.title === 'Prepare Combat') {
+    return (
+      <Link
+        className={`${styles.decisionCard} ${styles[decision.accent]}`}
+        href="/companion?view=prepare-combat"
+      >
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <button className={`${styles.decisionCard} ${styles[decision.accent]}`} type="button">
+      {cardContent}
+    </button>
+  );
+}
+
+function PrepareCombatView() {
+  return (
+    <section className={styles.flowView} aria-labelledby="prepare-combat-heading">
+      <FlowNavigation current="Prepare Combat" />
+
+      <div className={styles.flowHero}>
+        <div>
+          <p className={styles.eyebrow}><span aria-hidden="true" /> Combat planning</p>
+          <h1 id="prepare-combat-heading">Prepare Combat</h1>
+          <p>Choose an objective and see what you need before the next encounter.</p>
+        </div>
+        <span className={styles.prototypeBadge}>Local prototype</span>
+      </div>
+
+      <div className={styles.objectiveGrid}>
+        {combatObjectives.map((objective, index) => {
+          const isAvailable = objective === 'Ancient Sphere';
+          const cardContent = (
+            <>
+              <span className={styles.objectiveNumber}>{String(index + 1).padStart(2, '0')}</span>
+              <span className={styles.objectiveIcon} aria-hidden="true">
+                <SphereIcon active={isAvailable} />
+              </span>
+              <span className={styles.objectiveCopy}>
+                <strong>{objective}</strong>
+                <span className={isAvailable ? styles.available : styles.comingNext}>
+                  {isAvailable ? 'Open calculator' : 'Coming next'}
+                </span>
+              </span>
+              {isAvailable && <ArrowIcon />}
+            </>
+          );
+
+          return isAvailable ? (
+            <Link className={`${styles.objectiveCard} ${styles.objectiveActive}`} href="/companion?view=ancient-sphere" key={objective}>
+              {cardContent}
+            </Link>
+          ) : (
+            <div className={styles.objectiveCard} key={objective} aria-disabled="true">
+              {cardContent}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function AncientSphereView() {
+  return (
+    <section className={styles.flowView} aria-labelledby="ancient-sphere-heading">
+      <FlowNavigation current="Ancient Sphere" showCombatBack />
+
+      <div className={`${styles.flowHero} ${styles.calculatorHero}`}>
+        <div>
+          <p className={styles.eyebrow}><span aria-hidden="true" /> Combat objective</p>
+          <h1 id="ancient-sphere-heading">Ancient Sphere</h1>
+          <p>Compare what you have against the prototype sample requirements.</p>
+        </div>
+        <span className={styles.sphereEmblem} aria-hidden="true"><SphereIcon active /></span>
+      </div>
+
+      <div className={styles.prototypeNotice} role="note">
+        <strong>Prototype sample data</strong>
+        <span>For interface testing only. These values are not presented as a verified Palworld recipe.</span>
+      </div>
+
+      <AncientSphereCalculator />
+    </section>
+  );
+}
+
+function FlowNavigation({ current, showCombatBack = false }) {
+  return (
+    <nav className={styles.flowNavigation} aria-label="Companion navigation">
+      <div className={styles.breadcrumbs}>
+        <Link href="/companion">Home</Link>
+        <span aria-hidden="true">/</span>
+        {showCombatBack ? (
+          <>
+            <Link href="/companion?view=prepare-combat">Prepare Combat</Link>
+            <span aria-hidden="true">/</span>
+          </>
+        ) : null}
+        <strong aria-current="page">{current}</strong>
+      </div>
+      <div className={styles.navigationActions}>
+        {showCombatBack && (
+          <Link href="/companion?view=prepare-combat"><BackIcon /> Back to Prepare Combat</Link>
+        )}
+        <Link href="/companion">Return to Companion Home</Link>
+      </div>
+    </nav>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M4 10h11M11 6l4 4-4 4" />
+    </svg>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M16 10H5M9 6l-4 4 4 4" />
+    </svg>
+  );
+}
+
+function SphereIcon({ active = false }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" data-active={active || undefined}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M6.3 9h11.4M6.3 15h11.4M12 4c2 2.2 3 4.9 3 8s-1 5.8-3 8c-2-2.2-3-4.9-3-8s1-5.8 3-8Z" />
+    </svg>
   );
 }
 
