@@ -61,7 +61,7 @@ export default function AncientSphereCalculator() {
           <article className={`${styles.materialCard} ${material.missing === 0 ? styles.materialReady : ''}`} key={material.id}>
             <div className={styles.materialIdentity}>
               <span className={styles.materialStatus} aria-hidden="true">
-                {material.missing === 0 ? 'âœ“' : ''}
+                {material.missing === 0 ? <>&#10003;</> : null}
               </span>
               <div>
                 <p>Prototype material</p>
