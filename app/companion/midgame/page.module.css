@@ -310,6 +310,11 @@
   line-height: 1.7;
 }
 
+.nextMoveBody .blockedText {
+  margin-top: 12px;
+  color: #f4c38d;
+}
+
 .nextMoveProgress {
   display: grid;
   min-width: 112px;
@@ -369,7 +374,7 @@
 }
 
 .docSection,
-.buildSection {
+buildSection {
   margin-bottom: 64px;
 }
 
@@ -711,6 +716,19 @@
   font-weight: 700;
 }
 
+.actionRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.actionRow > span {
+  color: #707c98;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .category {
   margin-top: 36px;
 }
@@ -776,6 +794,11 @@
   box-shadow: 0 16px 35px rgba(0, 0, 0, 0.16), inset 0 1px rgba(255, 255, 255, 0.04);
 }
 
+.milestoneLocked {
+  border-color: rgba(244, 168, 92, 0.2);
+  background: linear-gradient(150deg, rgba(62, 39, 23, 0.36), rgba(11, 14, 27, 0.88));
+}
+
 .check {
   display: grid;
   width: 39px;
@@ -817,6 +840,13 @@
   font-size: 14px;
   letter-spacing: -0.015em;
   line-height: 1.35;
+}
+
+.milestoneCopy em {
+  color: #77829c;
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.45;
 }
 
 .footer {
@@ -899,6 +929,12 @@
 
   .sectionHeading {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actionRow {
+    width: 100%;
+    align-items: stretch;
     flex-direction: column;
   }
 
