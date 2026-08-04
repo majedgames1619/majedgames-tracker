@@ -1,8 +1,8 @@
 import MidgameBoard from './MidgameBoard';
 
 export const metadata = {
-  title: 'Palworld Helper — TAG World',
-  description: 'Get inventory-aware Palworld priorities, build guidance, warnings, and world tracking.',
+  title: 'Palworld Randomized Midgame | MajedGames Companion',
+  description: 'Track the fresh TagBackTV randomized Palworld midgame route with prerequisite-based next moves.',
 };
 
 export default function MidgamePage() {
