@@ -40,6 +40,7 @@ export function readTagBackWorldSave(rawValue, profile = tagWorldProfile) {
     marker: parsed.marker || TAG_WORLD_STORAGE_MARKER,
     milestones: normalizeBooleanMap(parsed.milestones),
     inventory: normalizeInventory(profile.inventory, parsed.inventory),
+    selectedTarget: typeof parsed.selectedTarget === 'string' ? parsed.selectedTarget : null,
     migrationNeeded: false,
     original: parsed,
   };
@@ -57,6 +58,10 @@ export function writeTagBackWorldSave(existingRawValue, updates = {}, profile = 
     next.inventory = normalizeInventory(profile.inventory, updates.inventory);
   } else if (current.original.inventory) {
     next.inventory = current.inventory;
+  }
+
+  if (typeof updates.selectedTarget === 'string') {
+    next.selectedTarget = updates.selectedTarget;
   }
 
   return JSON.stringify(next);
