@@ -1,8 +1,8 @@
 import MidgameBoard from './MidgameBoard';
 
 export const metadata = {
-  title: 'Palworld Mid-Game Companion — Pre-Alpha',
-  description: 'Track world milestones and see one clear recommended next move.',
+  title: 'Palworld Helper — TAG World',
+  description: 'Get inventory-aware Palworld priorities, build guidance, warnings, and world tracking.',
 };
 
 export default function MidgamePage() {
