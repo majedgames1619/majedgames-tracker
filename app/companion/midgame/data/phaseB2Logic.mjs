@@ -5,6 +5,12 @@ export const CARD_STATUS = {
   PROTECTED: 'Protected',
 };
 
+export const COMPONENT_CLICK_ACTION = {
+  DRILL_IN: 'drill-in',
+  OPEN_EDITOR: 'open-editor-for-item',
+  RAW_LEAF: 'no-op-leaf',
+};
+
 function sortByNameThenId(a, b) {
   return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
 }
@@ -36,6 +42,12 @@ export function getStatusTone(status) {
   return 'missing';
 }
 
+export function getComponentClickAction(node) {
+  if (node?.isRaw === true) return COMPONENT_CLICK_ACTION.RAW_LEAF;
+  if (node?.recipe) return COMPONENT_CLICK_ACTION.DRILL_IN;
+  return COMPONENT_CLICK_ACTION.OPEN_EDITOR;
+}
+
 export function getTargetOptions(profile) {
   return profile.nodes
     .map((node) => ({
@@ -52,13 +64,16 @@ export function buildCurrentLevelCards(currentNode, levelResult, nodeMap) {
     const node = nodeMap.get(input.id) || { id: input.id, name: input.id, recipe: null, isRaw: false };
     const breakdown = getBreakdown(levelResult, input.id);
     const status = getCardStatus(node, breakdown);
+    const clickAction = getComponentClickAction(node);
 
     return {
       id: input.id,
       node,
       breakdown,
       status,
-      canDrill: Boolean(node.recipe) && status !== CARD_STATUS.RECIPE,
+      clickAction,
+      canDrill: clickAction === COMPONENT_CLICK_ACTION.DRILL_IN,
+      isNavigable: clickAction !== COMPONENT_CLICK_ACTION.RAW_LEAF,
     };
   });
 }

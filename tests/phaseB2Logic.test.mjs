@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CARD_STATUS,
+  COMPONENT_CLICK_ACTION,
   buildBreadcrumbs,
   buildCurrentLevelCards,
   getCardStatus,
+  getComponentClickAction,
   getGatherSummary,
   getTargetOptions,
 } from '../app/companion/midgame/data/phaseB2Logic.mjs';
@@ -86,4 +88,10 @@ test('target options include raw, incomplete, craftable, and building nodes', ()
   });
 
   assert.deepEqual(options.map((item) => item.id), ['building', 'incomplete', 'part', 'raw']);
+});
+
+test('routes recipe, incomplete, and raw component clicks to the correct action', () => {
+  assert.equal(getComponentClickAction({ id: 'computer', recipe: { inputs: [] }, isRaw: false }), COMPONENT_CLICK_ACTION.DRILL_IN);
+  assert.equal(getComponentClickAction({ id: 'solvent', recipe: null, isRaw: false }), COMPONENT_CLICK_ACTION.OPEN_EDITOR);
+  assert.equal(getComponentClickAction({ id: 'ore', recipe: null, isRaw: true }), COMPONENT_CLICK_ACTION.RAW_LEAF);
 });
