@@ -35,6 +35,27 @@ export function getCardStatus(node, breakdown) {
   return CARD_STATUS.MISSING;
 }
 
+export function getCardFlags(node, breakdown) {
+  const have = Number(breakdown?.have);
+  const need = Number(breakdown?.need);
+
+  return {
+    isCompleted: Number.isFinite(have) && Number.isFinite(need) && have >= need,
+    isProtected: node?.isProtected === true || breakdown?.isProtected === true,
+  };
+}
+
+export function addGatheredInventory(inventory, id, gatheredValue) {
+  const gathered = Number(gatheredValue);
+  if (typeof id !== 'string' || !id || !Number.isFinite(gathered) || gathered <= 0) return inventory;
+
+  const currentValue = Number(inventory?.[id]);
+  const owned = Number.isFinite(currentValue) && currentValue >= 0 ? currentValue : 0;
+  const nextValue = Math.min(owned + gathered, Number.MAX_SAFE_INTEGER);
+
+  return { ...inventory, [id]: nextValue };
+}
+
 export function getStatusTone(status) {
   if (status === CARD_STATUS.READY) return 'ready';
   if (status === CARD_STATUS.RECIPE) return 'recipe';
@@ -64,6 +85,7 @@ export function buildCurrentLevelCards(currentNode, levelResult, nodeMap) {
     const node = nodeMap.get(input.id) || { id: input.id, name: input.id, recipe: null, isRaw: false };
     const breakdown = getBreakdown(levelResult, input.id);
     const status = getCardStatus(node, breakdown);
+    const flags = getCardFlags(node, breakdown);
     const clickAction = getComponentClickAction(node);
 
     return {
@@ -71,6 +93,7 @@ export function buildCurrentLevelCards(currentNode, levelResult, nodeMap) {
       node,
       breakdown,
       status,
+      ...flags,
       clickAction,
       canDrill: clickAction === COMPONENT_CLICK_ACTION.DRILL_IN,
       isNavigable: clickAction !== COMPONENT_CLICK_ACTION.RAW_LEAF,
