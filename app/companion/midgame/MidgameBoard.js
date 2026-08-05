@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import RecipeEditor from './RecipeEditor';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
+  CARD_STATUS,
   COMPONENT_CLICK_ACTION,
+  addGatheredInventory,
   buildBreadcrumbs,
   buildCurrentLevelCards,
   getBreakdown,
@@ -63,6 +65,10 @@ function StatusPill({ status }) {
   return <span className={`${styles.statusPill} ${styles[getStatusTone(status)]}`}>{status}</span>;
 }
 
+function CompletedPill() {
+  return <span className={styles.completedPill} aria-label="Ready">&#10003; Ready</span>;
+}
+
 export default function MidgameBoard() {
   const [userRecipes, setUserRecipes] = useState({});
   const [inventory, setInventory] = useState(tagWorldProfile.inventory);
@@ -87,6 +93,7 @@ export default function MidgameBoard() {
   const [completed, setCompleted] = useState(emptyMilestones);
   const [storageReady, setStorageReady] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
+  const [gatherAmounts, setGatherAmounts] = useState({});
 
   useEffect(() => {
     try {
@@ -155,6 +162,15 @@ export default function MidgameBoard() {
 
   function updateInventory(id, value) {
     setInventory((current) => ({ ...current, [id]: normalizeQuantity(value) }));
+  }
+
+  function addGathered(id) {
+    const amount = gatherAmounts[id];
+    const nextInventory = addGatheredInventory(inventory, id, amount);
+    if (nextInventory === inventory) return;
+
+    setInventory((current) => addGatheredInventory(current, id, amount));
+    setGatherAmounts((current) => ({ ...current, [id]: '' }));
   }
 
   function chooseTarget(id) {
@@ -280,7 +296,7 @@ export default function MidgameBoard() {
 
           <div className={styles.componentGrid}>
             {cards.map((card) => (
-              <article className={`${styles.componentCard} ${card.isNavigable ? styles.componentCardNavigable : ''} ${styles[getStatusTone(card.status)]}`} key={card.id}>
+              <article className={`${styles.componentCard} ${card.isNavigable ? styles.componentCardNavigable : ''} ${styles[getStatusTone(card.status)]} ${card.isCompleted ? styles.completed : ''}`} key={card.id}>
                 {card.isNavigable && (
                   <button
                     className={styles.cardClickTarget}
@@ -291,7 +307,10 @@ export default function MidgameBoard() {
                 )}
                 <div className={styles.cardTop}>
                   <ItemTile item={card.node} />
-                  <StatusPill status={card.status} />
+                  <div className={styles.cardBadges}>
+                    {(card.status !== CARD_STATUS.READY || !card.isCompleted) && <StatusPill status={card.status} />}
+                    {card.isCompleted && <CompletedPill />}
+                  </div>
                 </div>
                 <h4>{card.node.name}</h4>
                 <div className={styles.stats}>
@@ -302,6 +321,21 @@ export default function MidgameBoard() {
                   <span><small>Need</small><strong>{card.breakdown.need}</strong></span>
                   <span><small>Craft</small><strong>{card.breakdown.missing}</strong></span>
                 </div>
+                <form className={styles.gatherAdd} onSubmit={(event) => { event.preventDefault(); addGathered(card.id); }}>
+                  <label htmlFor={`gather-${card.id}`}>Gather</label>
+                  <input
+                    id={`gather-${card.id}`}
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="Add"
+                    aria-label={`Gather ${card.node.name}`}
+                    value={gatherAmounts[card.id] || ''}
+                    onChange={(event) => setGatherAmounts((current) => ({ ...current, [card.id]: event.target.value }))}
+                  />
+                  <button type="submit" aria-label={`Add gathered ${card.node.name}`}>Add</button>
+                </form>
                 {card.canDrill ? (
                   <div className={styles.cardActions}>
                     <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>

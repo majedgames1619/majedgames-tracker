@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import {
   CARD_STATUS,
   COMPONENT_CLICK_ACTION,
+  addGatheredInventory,
   buildBreadcrumbs,
   buildCurrentLevelCards,
   getCardStatus,
+  getCardFlags,
   getComponentClickAction,
   getGatherSummary,
   getTargetOptions,
 } from '../app/companion/midgame/data/phaseB2Logic.mjs';
+import { calculateTarget } from '../app/companion/midgame/data/craftingCalculator.mjs';
 
 const missing = { have: 1, need: 3, missing: 2, isIncomplete: false, isProtected: false };
 
@@ -88,6 +91,44 @@ test('target options include raw, incomplete, craftable, and building nodes', ()
   });
 
   assert.deepEqual(options.map((item) => item.id), ['building', 'incomplete', 'part', 'raw']);
+});
+
+test('derives completed independently so completed and protected can coexist', () => {
+  assert.deepEqual(getCardFlags({ isProtected: false }, { have: 4, need: 4 }), {
+    isCompleted: true,
+    isProtected: false,
+  });
+  assert.deepEqual(getCardFlags({ isProtected: true }, { have: 7, need: 4 }), {
+    isCompleted: true,
+    isProtected: true,
+  });
+  assert.equal(getCardFlags({}, { have: 3, need: 4 }).isCompleted, false);
+});
+
+test('gather adds to owned inventory and rejects empty, invalid, and non-positive values', () => {
+  const inventory = { ore: 10 };
+
+  assert.deepEqual(addGatheredInventory(inventory, 'ore', '147'), { ore: 157 });
+  assert.equal(addGatheredInventory(inventory, 'ore', ''), inventory);
+  assert.equal(addGatheredInventory(inventory, 'ore', 'not-a-number'), inventory);
+  assert.equal(addGatheredInventory(inventory, 'ore', 0), inventory);
+  assert.equal(addGatheredInventory(inventory, 'ore', -4), inventory);
+});
+
+test('gathered inventory is passed back through the Phase A engine to recompute shortage', () => {
+  const profile = {
+    inventory: { ore: 10 },
+    nodes: [
+      { id: 'target', name: 'Target', kind: 'item', isRaw: false, isProtected: false, recipe: { yield: 1, inputs: [{ id: 'ore', quantity: 236 }] } },
+      { id: 'ore', name: 'Ore', kind: 'item', isRaw: true, isProtected: false, recipe: null },
+    ],
+    targets: [],
+  };
+  const inventory = addGatheredInventory(profile.inventory, 'ore', 147);
+  const result = calculateTarget(profile, 'target', { inventory });
+
+  assert.equal(inventory.ore, 157);
+  assert.equal(result.perNode.find((item) => item.id === 'ore').missing, 79);
 });
 
 test('routes recipe, incomplete, and raw component clicks to the correct action', () => {
