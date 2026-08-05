@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import RecipeEditor from './RecipeEditor';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
+  CARD_STATUS,
   COMPONENT_CLICK_ACTION,
   addGatheredInventory,
   buildBreadcrumbs,
@@ -168,7 +169,7 @@ export default function MidgameBoard() {
     const nextInventory = addGatheredInventory(inventory, id, amount);
     if (nextInventory === inventory) return;
 
-    setInventory(nextInventory);
+    setInventory((current) => addGatheredInventory(current, id, amount));
     setGatherAmounts((current) => ({ ...current, [id]: '' }));
   }
 
@@ -307,7 +308,7 @@ export default function MidgameBoard() {
                 <div className={styles.cardTop}>
                   <ItemTile item={card.node} />
                   <div className={styles.cardBadges}>
-                    {card.status !== 'Ready' && <StatusPill status={card.status} />}
+                    {(card.status !== CARD_STATUS.READY || !card.isCompleted) && <StatusPill status={card.status} />}
                     {card.isCompleted && <CompletedPill />}
                   </div>
                 </div>
@@ -325,7 +326,7 @@ export default function MidgameBoard() {
                   <input
                     id={`gather-${card.id}`}
                     type="number"
-                    min="0"
+                    min="0.01"
                     step="any"
                     inputMode="decimal"
                     placeholder="Add"
