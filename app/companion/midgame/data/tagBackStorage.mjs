@@ -31,6 +31,11 @@ function normalizeInventory(defaultInventory, source = {}) {
   );
 }
 
+function normalizeSelectedQuantity(value) {
+  const quantity = Number(value);
+  return Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1;
+}
+
 export function readTagBackWorldSave(rawValue, profile = tagWorldProfile) {
   const parsed = parseJson(rawValue);
 
@@ -41,6 +46,7 @@ export function readTagBackWorldSave(rawValue, profile = tagWorldProfile) {
     milestones: normalizeBooleanMap(parsed.milestones),
     inventory: normalizeInventory(profile.inventory, parsed.inventory),
     selectedTarget: typeof parsed.selectedTarget === 'string' ? parsed.selectedTarget : null,
+    selectedQuantity: normalizeSelectedQuantity(parsed.selectedQuantity),
     migrationNeeded: false,
     original: parsed,
   };
@@ -62,6 +68,12 @@ export function writeTagBackWorldSave(existingRawValue, updates = {}, profile = 
 
   if (typeof updates.selectedTarget === 'string') {
     next.selectedTarget = updates.selectedTarget;
+  }
+
+  if (updates.selectedQuantity !== undefined) {
+    next.selectedQuantity = normalizeSelectedQuantity(updates.selectedQuantity);
+  } else if (current.original.selectedQuantity !== undefined) {
+    next.selectedQuantity = current.selectedQuantity;
   }
 
   return JSON.stringify(next);

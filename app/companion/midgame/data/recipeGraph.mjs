@@ -136,6 +136,7 @@ function normalizeRecipe(recipe) {
   return {
     yield: recipe.yield || 1,
     inputs: normalizeInputs(recipe.inputs),
+    station: typeof recipe.station === 'string' ? recipe.station : null,
   };
 }
 

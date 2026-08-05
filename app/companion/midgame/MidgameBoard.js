@@ -4,83 +4,54 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
-  DOC_QUESTIONS,
-  STATUS,
+  buildBreadcrumbs,
+  buildCurrentLevelCards,
   getBreakdown,
-  getDocAnswer,
-  getFirstLevelComponents,
-  getResultStatus,
+  getGatherSummary,
   getStatusTone,
-  getTargetMetrics,
-} from './data/phaseB1Logic.mjs';
+  getTargetOptions,
+} from './data/phaseB2Logic.mjs';
 import { tagWorldProfile } from './data/recipeGraph.mjs';
-import { TAG_WORLD_STORAGE_MARKER, readTagBackWorldSave, writeTagBackWorldSave } from './data/tagBackStorage.mjs';
+import { readTagBackWorldSave, writeTagBackWorldSave } from './data/tagBackStorage.mjs';
 import { midgameMilestones } from './midgameMilestones';
 import styles from './page.module.css';
 
 const STORAGE_KEY = tagWorldProfile.storageKey;
-const CATEGORY_ORDER = ['Base', 'Production', 'Progression'];
 const DEFAULT_TARGET_ID = 'weapon-line';
+const CATEGORY_ORDER = ['Base', 'Production', 'Progression'];
 
-function createEmptyMilestones() {
-  return Object.fromEntries(midgameMilestones.map((milestone) => [milestone.id, false]));
+function normalizeQuantity(value, fallback = 0) {
+  const quantity = Number.parseInt(String(value).replace(/\D/g, ''), 10);
+  return Number.isSafeInteger(quantity) && quantity >= 0 ? quantity : fallback;
 }
 
 function normalizeMilestones(source) {
-  return Object.fromEntries(
-    midgameMilestones.map((milestone) => [milestone.id, source?.[milestone.id] === true]),
-  );
+  return Object.fromEntries(midgameMilestones.map((milestone) => [milestone.id, source?.[milestone.id] === true]));
 }
 
-function getMilestoneById(id) {
+function emptyMilestones() {
+  return normalizeMilestones({});
+}
+
+function getMilestone(id) {
   return midgameMilestones.find((milestone) => milestone.id === id);
 }
 
 function getUnmetPrerequisites(milestone, completed) {
   return milestone.prerequisites
-    .filter((prerequisiteId) => !completed[prerequisiteId])
-    .map((prerequisiteId) => getMilestoneById(prerequisiteId)?.label || prerequisiteId);
-}
-
-function getNextMilestone(completed) {
-  const incompleteMilestones = midgameMilestones.filter((milestone) => !completed[milestone.id]);
-  const readyMilestone = incompleteMilestones.find((milestone) => getUnmetPrerequisites(milestone, completed).length === 0);
-
-  if (readyMilestone) return readyMilestone;
-  return incompleteMilestones[0] || null;
-}
-
-function cleanQuantity(value) {
-  const parsed = Number.parseInt(String(value).replace(/\D/g, ''), 10);
-  return Number.isSafeInteger(parsed) ? parsed : 0;
+    .filter((id) => !completed[id])
+    .map((id) => getMilestone(id)?.label || id);
 }
 
 function getHue(id) {
   return Array.from(id).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360;
 }
 
-function getTargetOptions() {
-  return tagWorldProfile.nodes
-    .filter((node) => node.recipe)
-    .map((node) => {
-      const targetMeta = tagWorldProfile.targets.find((target) => target.id === node.id);
-      return {
-        ...node,
-        priority: targetMeta?.priority || 99,
-        purpose: targetMeta?.purpose || node.name,
-      };
-    })
-    .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
-}
-
-function ItemTile({ item, size = 'normal' }) {
+function ItemTile({ item }) {
+  const initials = item.name.split(' ').map((word) => word[0]).join('').slice(0, 3);
   return (
-    <span
-      className={`${styles.itemTile} ${size === 'large' ? styles.itemTileLarge : ''}`}
-      style={{ '--tile-hue': getHue(item.id) }}
-      aria-hidden="true"
-    >
-      <span>{item.name.split(' ').map((word) => word[0]).join('').slice(0, 3)}</span>
+    <span className={styles.itemTile} style={{ '--tile-hue': getHue(item.id) }} aria-hidden="true">
+      <span>{initials}</span>
     </span>
   );
 }
@@ -89,43 +60,35 @@ function StatusPill({ status }) {
   return <span className={`${styles.statusPill} ${styles[getStatusTone(status)]}`}>{status}</span>;
 }
 
-function ReadMore({ summary, children }) {
-  return (
-    <details className={styles.readMore}>
-      <summary>{summary}</summary>
-      <div>{children}</div>
-    </details>
-  );
-}
-
 export default function MidgameBoard() {
-  const targetOptions = useMemo(getTargetOptions, []);
-  const nodeById = useMemo(() => new Map(tagWorldProfile.nodes.map((node) => [node.id, node])), []);
+  const nodeMap = useMemo(() => new Map(tagWorldProfile.nodes.map((node) => [node.id, node])), []);
+  const targetOptions = useMemo(() => getTargetOptions(tagWorldProfile), []);
   const inventoryItems = useMemo(
     () => tagWorldProfile.nodes.filter((node) => node.kind === 'item').sort((a, b) => a.name.localeCompare(b.name)),
     [],
   );
 
-  const [completed, setCompleted] = useState(createEmptyMilestones);
   const [inventory, setInventory] = useState(tagWorldProfile.inventory);
   const [selectedTargetId, setSelectedTargetId] = useState(DEFAULT_TARGET_ID);
-  const [selectedDocQuestion, setSelectedDocQuestion] = useState('next');
-  const [mobileView, setMobileView] = useState('tracker');
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [path, setPath] = useState([DEFAULT_TARGET_ID]);
+  const [quickEditId, setQuickEditId] = useState('coralumIngot');
+  const [completed, setCompleted] = useState(emptyMilestones);
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
     try {
-      const rawValue = window.localStorage.getItem(STORAGE_KEY);
-      const save = readTagBackWorldSave(rawValue);
-      const knownTargetIds = new Set(targetOptions.map((target) => target.id));
+      const save = readTagBackWorldSave(window.localStorage.getItem(STORAGE_KEY));
+      const knownTargets = new Set(targetOptions.map((target) => target.id));
+      const nextTarget = knownTargets.has(save.selectedTarget) ? save.selectedTarget : DEFAULT_TARGET_ID;
 
-      setCompleted(normalizeMilestones(save.milestones));
       setInventory(save.inventory);
-      if (save.selectedTarget && knownTargetIds.has(save.selectedTarget)) {
-        setSelectedTargetId(save.selectedTarget);
-      }
+      setCompleted(normalizeMilestones(save.milestones));
+      setSelectedTargetId(nextTarget);
+      setSelectedQuantity(save.selectedQuantity);
+      setPath([nextTarget]);
     } catch {
-      // Local storage is optional; the tracker remains usable with TAG World defaults.
+      // Browser storage is optional; defaults keep the calculator usable.
     } finally {
       setStorageReady(true);
     }
@@ -133,65 +96,68 @@ export default function MidgameBoard() {
 
   useEffect(() => {
     if (!storageReady) return;
-
     try {
-      const currentValue = window.localStorage.getItem(STORAGE_KEY);
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        writeTagBackWorldSave(currentValue, {
-          milestones: completed,
-          inventory,
-          selectedTarget: selectedTargetId,
-        }),
-      );
+      const current = window.localStorage.getItem(STORAGE_KEY);
+      window.localStorage.setItem(STORAGE_KEY, writeTagBackWorldSave(current, {
+        inventory,
+        milestones: completed,
+        selectedTarget: selectedTargetId,
+        selectedQuantity,
+      }));
     } catch {
-      // Keep the in-session tracker usable even if browser storage is unavailable.
+      // In-session edits still work when localStorage is unavailable.
     }
-  }, [completed, inventory, selectedTargetId, storageReady]);
+  }, [completed, inventory, selectedQuantity, selectedTargetId, storageReady]);
 
-  const selectedTarget = nodeById.get(selectedTargetId) || nodeById.get(DEFAULT_TARGET_ID);
-  const targetResult = useMemo(
-    () => calculateTarget(tagWorldProfile, selectedTarget.id, { inventory }),
-    [inventory, selectedTarget.id],
+  const originalResult = useMemo(
+    () => calculateTarget(tagWorldProfile, selectedTargetId, { inventory, quantity: selectedQuantity }),
+    [inventory, selectedQuantity, selectedTargetId],
   );
-  const targetStatus = getResultStatus(targetResult);
-  const targetMetrics = getTargetMetrics(targetResult);
-  const firstLevelComponents = useMemo(
-    () => getFirstLevelComponents(selectedTarget).map((component) => {
-      const node = nodeById.get(component.id) || { id: component.id, name: component.id };
-      const result = calculateTarget(tagWorldProfile, component.id, { inventory, quantity: component.quantity });
-      return {
-        ...component,
-        node,
-        result,
-        status: getResultStatus(result),
-        breakdown: getBreakdown(result, component.id),
-      };
-    }),
-    [inventory, nodeById, selectedTarget],
+  const currentId = path[path.length - 1];
+  const currentNode = nodeMap.get(currentId) || nodeMap.get(selectedTargetId);
+  const currentBreakdown = getBreakdown(originalResult, currentNode.id);
+  const currentCraftQuantity = Math.max(currentBreakdown.missing, 0);
+  const emptyLevelResult = useMemo(() => ({ perNode: [] }), []);
+  const levelResult = useMemo(() => {
+    if (currentNode.id === selectedTargetId) return originalResult;
+    if (currentCraftQuantity === 0) return emptyLevelResult;
+    return calculateTarget(tagWorldProfile, currentNode.id, {
+      inventory: { ...inventory, [currentNode.id]: 0 },
+      quantity: currentCraftQuantity,
+    });
+  }, [currentCraftQuantity, currentNode.id, emptyLevelResult, inventory, originalResult, selectedTargetId]);
+  const cards = useMemo(
+    () => buildCurrentLevelCards(currentNode, levelResult, nodeMap),
+    [currentNode, levelResult, nodeMap],
   );
-  const craftableSummaries = useMemo(
-    () => targetOptions.map((target) => ({
-      id: target.id,
-      name: target.name,
-      status: getResultStatus(calculateTarget(tagWorldProfile, target.id, { inventory })),
-    })),
-    [inventory, targetOptions],
+  const breadcrumbs = useMemo(
+    () => buildBreadcrumbs(path, nodeMap, originalResult),
+    [nodeMap, originalResult, path],
   );
-  const docAnswer = getDocAnswer(selectedDocQuestion, targetResult, craftableSummaries);
+  const gather = useMemo(() => getGatherSummary(originalResult), [originalResult]);
   const completedCount = Object.values(completed).filter(Boolean).length;
-  const nextMilestone = getNextMilestone(completed);
 
   function updateInventory(id, value) {
-    setInventory((current) => ({ ...current, [id]: cleanQuantity(value) }));
+    setInventory((current) => ({ ...current, [id]: normalizeQuantity(value) }));
   }
 
-  function toggleMilestone(id) {
-    setCompleted((current) => ({ ...current, [id]: !current[id] }));
+  function chooseTarget(id) {
+    setSelectedTargetId(id);
+    setPath([id]);
   }
 
-  function resetMilestones() {
-    setCompleted(createEmptyMilestones());
+  function setTargetQuantity(value) {
+    setSelectedQuantity(Math.max(normalizeQuantity(value, 1), 1));
+    setPath([selectedTargetId]);
+  }
+
+  function drillTo(id) {
+    setPath((current) => [...current, id]);
+    setQuickEditId(id);
+  }
+
+  function jumpTo(index) {
+    setPath((current) => current.slice(0, index + 1));
   }
 
   return (
@@ -199,204 +165,166 @@ export default function MidgameBoard() {
       <div className={styles.page}>
         <header className={styles.header}>
           <Link className={styles.brand} href="/companion" aria-label="Return to MajedGames Companion">
-            <span className={styles.brandMark} aria-hidden="true">
-              <svg viewBox="0 0 44 44"><path d="M9 30V14l8.7 10.4L22 18l4.3 6.4L35 14v16" /><path d="M9 35h26" /></svg>
-            </span>
-            <span className={styles.brandText}><strong>MajedGames</strong><span>Companion</span></span>
+            <span className={styles.brandMark} aria-hidden="true">MG</span>
+            <span><strong>MajedGames</strong><small>Companion</small></span>
           </Link>
-          <div className={styles.headerMeta}><span className={styles.phase}>Phase B1</span><span className={styles.profile}>52</span></div>
+          <span className={styles.worldBadge}>TAG World · Phase B2</span>
         </header>
 
-        <section className={styles.hero} aria-labelledby="midgame-heading">
+        <section className={styles.hero} aria-labelledby="calculator-title">
           <div>
-            <p className={styles.eyebrow}>TagBackTV community server</p>
-            <h1 id="midgame-heading">Crafting tracker</h1>
-            <p className={styles.subtitle}>Visual targets, manual inventory, and rules-based Doc advice powered by the Phase A crafting engine.</p>
+            <p className={styles.eyebrow}>Single-target crafting calculator</p>
+            <h1 id="calculator-title">Build it without losing the thread.</h1>
+            <p>Pick one goal, drill through its recipe, and keep the full gathering trip visible.</p>
           </div>
-          <label className={styles.targetSelect}>
-            <span>Current target</span>
-            <select value={selectedTargetId} onChange={(event) => setSelectedTargetId(event.target.value)}>
-              {targetOptions.map((target) => <option value={target.id} key={target.id}>{target.name}</option>)}
+          <div className={styles.targetControls}>
+            <label>
+              <span>Crafting target</span>
+              <select value={selectedTargetId} onChange={(event) => chooseTarget(event.target.value)}>
+                {targetOptions.map((target) => <option value={target.id} key={target.id}>{target.name}</option>)}
+              </select>
+            </label>
+            <label className={styles.quantityField}>
+              <span>Quantity</span>
+              <input type="number" min="1" step="1" inputMode="numeric" value={selectedQuantity} onChange={(event) => setTargetQuantity(event.target.value)} />
+            </label>
+          </div>
+        </section>
+
+        <section className={styles.calculator} aria-labelledby="current-node-title">
+          <nav className={styles.breadcrumbs} aria-label="Crafting path">
+            {breadcrumbs.map((crumb, index) => (
+              <span className={styles.crumbGroup} key={`${crumb.id}-${index}`}>
+                {index > 0 && <span className={styles.chevron} aria-hidden="true">›</span>}
+                <button type="button" aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined} onClick={() => jumpTo(index)}>
+                  <span>{crumb.name}</span>
+                  <small>{crumb.craft} to craft{index === breadcrumbs.length - 1 ? ' · here' : ''}</small>
+                </button>
+              </span>
+            ))}
+          </nav>
+
+          <div className={styles.nodeHeading}>
+            <div className={styles.nodeIdentity}>
+              <ItemTile item={currentNode} />
+              <div>
+                <p>{currentNode.kind === 'building' ? 'Building / machine' : 'Current component'}</p>
+                <h2 id="current-node-title">{currentNode.name}</h2>
+                {currentNode.recipe?.station && <small className={styles.station}>Made in: {currentNode.recipe.station}</small>}
+              </div>
+            </div>
+            <div className={styles.nodeActions}>
+              <span><small>Need</small><strong>{currentBreakdown.need}</strong></span>
+              <span><small>Craft</small><strong>{currentBreakdown.missing}</strong></span>
+              <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>← Back</button>
+            </div>
+          </div>
+
+          <div className={styles.componentHeader}>
+            <div><p>One level at a time</p><h3>Direct components</h3></div>
+            <span>{cards.length} {cards.length === 1 ? 'component' : 'components'}</span>
+          </div>
+
+          <div className={styles.componentGrid}>
+            {cards.map((card) => (
+              <article className={`${styles.componentCard} ${styles[getStatusTone(card.status)]}`} key={card.id}>
+                <div className={styles.cardTop}>
+                  <ItemTile item={card.node} />
+                  <StatusPill status={card.status} />
+                </div>
+                <h4>{card.node.name}</h4>
+                <div className={styles.stats}>
+                  <label>
+                    <span>Have</span>
+                    <input aria-label={`Have ${card.node.name}`} inputMode="numeric" value={inventory[card.id] || 0} onChange={(event) => updateInventory(card.id, event.target.value)} />
+                  </label>
+                  <span><small>Need</small><strong>{card.breakdown.need}</strong></span>
+                  <span><small>Craft</small><strong>{card.breakdown.missing}</strong></span>
+                </div>
+                {card.canDrill ? (
+                  <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>
+                ) : (
+                  <p className={styles.cardNote}>{card.node.isRaw ? 'Raw material · end of this branch' : 'Recipe data is incomplete'}</p>
+                )}
+              </article>
+            ))}
+            {cards.length === 0 && (
+              <p className={styles.branchEnd}>
+                {currentNode.isRaw
+                  ? 'This is a raw material — you have reached the end of this branch.'
+                  : 'Recipe Needed — direct components cannot be shown until this recipe is known.'}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className={styles.gatherSection} aria-labelledby="gather-title">
+          <div className={styles.gatherHeading}>
+            <div><p>Original target · always visible</p><h2 id="gather-title">What to Gather</h2></div>
+            <span>For {selectedQuantity} × {nodeMap.get(selectedTargetId)?.name}</span>
+          </div>
+          {gather.raw.length > 0 ? (
+            <ul className={styles.gatherList}>
+              {gather.raw.map((item) => (
+                <li key={item.id}><ItemTile item={nodeMap.get(item.id) || item} /><span>{item.name}</span><strong>{item.quantity}</strong></li>
+              ))}
+            </ul>
+          ) : <p className={styles.emptyState}>No raw-resource shortages for this target.</p>}
+
+          {gather.incomplete.length > 0 && (
+            <aside className={styles.recipeWarning} aria-labelledby="recipe-needed-title">
+              <div><strong id="recipe-needed-title">Recipe Needed — can’t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
+              <ul>{gather.incomplete.map((item) => <li key={item.id}>{item.name} <strong>{item.missing}</strong></li>)}</ul>
+            </aside>
+          )}
+          {originalResult.protectedRequired.length > 0 && (
+            <p className={styles.protectedWarning}><strong>Protected:</strong> this plan consumes {originalResult.protectedRequired.map((item) => `${item.quantity} ${item.name}`).join(', ')}.</p>
+          )}
+          {originalResult.circular.hasCircular && <p className={styles.recipeWarning}>Circular recipe detected. This branch cannot be fully computed.</p>}
+        </section>
+
+        <section className={styles.quickEdit} aria-labelledby="quick-edit-title">
+          <div><p>Saved instantly to TAG World</p><h2 id="quick-edit-title">Quick inventory edit</h2></div>
+          <label>
+            <span>Material</span>
+            <select value={quickEditId} onChange={(event) => setQuickEditId(event.target.value)}>
+              {inventoryItems.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
             </select>
+          </label>
+          <label className={styles.quickNumber}>
+            <span>Owned total</span>
+            <input inputMode="numeric" value={inventory[quickEditId] || 0} onChange={(event) => updateInventory(quickEditId, event.target.value)} />
           </label>
         </section>
 
-        <nav className={styles.mobileTabs} aria-label="Midgame views">
-          {[
-            ['tracker', 'Tracker'],
-            ['doc', 'Ask Doc'],
-            ['inventory', 'Inventory'],
-          ].map(([id, label]) => (
-            <button type="button" className={mobileView === id ? styles.activeTab : ''} onClick={() => setMobileView(id)} key={id}>{label}</button>
-          ))}
-        </nav>
-
-        <div className={styles.mainGrid}>
-          <section className={`${styles.trackerPanel} ${mobileView === 'tracker' ? styles.mobileVisible : ''}`} aria-labelledby="tracker-heading">
-            <article className={`${styles.targetCard} ${styles[getStatusTone(targetStatus)]}`}>
-              <div className={styles.targetArt}>
-                <ItemTile item={selectedTarget} size="large" />
-              </div>
-              <div className={styles.targetInfo}>
-                <div className={styles.cardTopline}>
-                  <span>Crafting target</span>
-                  <StatusPill status={targetStatus} />
-                </div>
-                <h2 id="tracker-heading">{selectedTarget.name}</h2>
-                <p>{selectedTarget.purpose || 'Track known recipe requirements from TAG World data.'}</p>
-                <div className={styles.metricRow}>
-                  <span><small>Need</small><strong>{targetMetrics.need || 1}</strong></span>
-                  <span><small>Owned</small><strong>{targetMetrics.have}</strong></span>
-                  <span><small>Remaining</small><strong>{targetMetrics.missing}</strong></span>
-                </div>
-                <div className={styles.progressTrack} aria-label={`${targetMetrics.progress}% owned`}>
-                  <span style={{ width: `${targetMetrics.progress}%` }} />
-                </div>
-              </div>
-            </article>
-
-            <section className={styles.componentSection} aria-labelledby="components-heading">
-              <div className={styles.sectionHeading}>
-                <div><p>First-level components</p><h2 id="components-heading">Required components</h2></div>
-                <span>{firstLevelComponents.length} cards</span>
-              </div>
-              <div className={styles.componentGrid}>
-                {firstLevelComponents.map((component) => (
-                  <article className={`${styles.componentCard} ${styles[getStatusTone(component.status)]}`} key={component.id}>
-                    <div className={styles.componentTop}>
-                      <ItemTile item={component.node} />
-                      <StatusPill status={component.status} />
-                    </div>
-                    <h3>{component.node.name}</h3>
-                    <div className={styles.compactStats}>
-                      <span><small>Have</small><strong>{component.breakdown.have}</strong></span>
-                      <span><small>Need</small><strong>{component.breakdown.need}</strong></span>
-                      <span><small>Missing</small><strong>{component.breakdown.missing}</strong></span>
-                    </div>
-                    {component.result.incomplete.length > 0 && <p className={styles.cardNote}>Recipe needed: {component.result.incomplete.map((item) => item.name).join(', ')}</p>}
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <div className={styles.summaryGrid}>
-              <section className={styles.gatherCard} aria-labelledby="gather-heading">
-                <div className={styles.sectionHeading}>
-                  <div><p>Raw only</p><h2 id="gather-heading">What to Gather</h2></div>
-                </div>
-                {targetResult.rawShortages.length ? (
-                  <ul className={styles.gatherList}>
-                    {targetResult.rawShortages.map((item) => <li key={item.id}><strong>{item.quantity}</strong><span>{item.name}</span></li>)}
-                  </ul>
-                ) : <p className={styles.emptyText}>No raw gathering needed for this target.</p>}
-              </section>
-
-              <section className={styles.recipeCard} aria-labelledby="recipe-heading">
-                <div className={styles.sectionHeading}>
-                  <div><p>Unknown data</p><h2 id="recipe-heading">Recipe Needed</h2></div>
-                </div>
-                {targetResult.incomplete.length ? (
-                  <ul className={styles.recipeList}>
-                    {targetResult.incomplete.map((item) => <li key={item.id}>{item.name}</li>)}
-                  </ul>
-                ) : <p className={styles.emptyText}>No incomplete recipe in this branch.</p>}
-              </section>
-            </div>
-
-            <button className={styles.uploadPlaceholder} type="button" disabled>
-              Upload Inventory Screenshots <span>Coming soon in Phase C</span>
-            </button>
-          </section>
-
-          <aside className={`${styles.docPanel} ${mobileView === 'doc' ? styles.mobileVisible : ''}`} aria-labelledby="doc-heading">
-            <div className={styles.docHeader}>
-              <span aria-hidden="true">D</span>
-              <div><p>Rules-based Doc</p><h2 id="doc-heading">Ask Doc</h2></div>
-            </div>
-            <div className={styles.docQuestionGrid}>
-              {DOC_QUESTIONS.map(([id, label]) => (
-                <button className={selectedDocQuestion === id ? styles.questionActive : ''} type="button" onClick={() => setSelectedDocQuestion(id)} key={id}>{label}</button>
-              ))}
-            </div>
-            <article className={styles.docAnswer} aria-live="polite">
-              <strong>{docAnswer.short}</strong>
-              <ReadMore summary="Read More">
-                <p>{docAnswer.detail}</p>
-              </ReadMore>
-            </article>
-            <section className={styles.protectBox} aria-label="Protected resource warning">
-              <h3>Protect</h3>
-              {targetResult.protectedRequired.length ? (
-                <ul>
-                  {targetResult.protectedRequired.map((item) => <li key={item.id}>{item.quantity} {item.name}</li>)}
-                </ul>
-              ) : <p>No protected resources required by this target.</p>}
-            </section>
-          </aside>
-        </div>
-
-        <section className={`${styles.inventoryPanel} ${mobileView === 'inventory' ? styles.mobileVisible : ''}`} aria-labelledby="inventory-heading">
-          <div className={styles.sectionHeading}>
-            <div><p>Manual entry only</p><h2 id="inventory-heading">Inventory Editor</h2></div>
-            <span>Saved to {STORAGE_KEY}</span>
-          </div>
-          <div className={styles.inventoryGrid}>
-            {inventoryItems.map((item) => (
-              <label key={item.id}>
-                <span>{item.name}</span>
-                <input inputMode="numeric" value={inventory[item.id] || 0} onChange={(event) => updateInventory(item.id, event.target.value)} />
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.supportingBoard} aria-labelledby="milestone-board-heading">
-          <div className={styles.sectionHeading}>
-            <div><p>Supporting progress</p><h2 id="milestone-board-heading">Milestone Board</h2></div>
-            <div className={styles.actionRow}>
-              <span>{completedCount} of {midgameMilestones.length} complete</span>
-              <button className={styles.secondaryButton} type="button" onClick={resetMilestones}>Reset unchecked</button>
-            </div>
-          </div>
-          {nextMilestone && <p className={styles.milestoneHint}>Next supporting milestone: {nextMilestone.label}</p>}
-
-          {CATEGORY_ORDER.map((category) => {
-            const categoryMilestones = midgameMilestones.filter((milestone) => milestone.category === category);
-            return (
-              <section className={styles.category} key={category}>
-                <div className={styles.categoryHeading}><h3>{category}</h3><span>{categoryMilestones.filter((milestone) => completed[milestone.id]).length} / {categoryMilestones.length}</span></div>
+        <details className={styles.milestoneBoard}>
+          <summary>
+            <span><small>Secondary progress</small><strong>Milestone Board</strong></span>
+            <span>{completedCount} / {midgameMilestones.length} complete</span>
+          </summary>
+          <div className={styles.milestoneBody}>
+            <button className={styles.resetButton} type="button" onClick={() => setCompleted(emptyMilestones())}>Reset milestones</button>
+            {CATEGORY_ORDER.map((category) => (
+              <section className={styles.milestoneCategory} key={category}>
+                <h3>{category}</h3>
                 <div className={styles.milestoneGrid}>
-                  {categoryMilestones.map((milestone) => {
+                  {midgameMilestones.filter((milestone) => milestone.category === category).map((milestone) => {
+                    const unmet = getUnmetPrerequisites(milestone, completed);
                     const isComplete = completed[milestone.id];
-                    const unmetPrerequisites = getUnmetPrerequisites(milestone, completed);
-                    const isLocked = !isComplete && unmetPrerequisites.length > 0;
-
                     return (
-                      <button
-                        className={`${styles.milestoneCard} ${isComplete ? styles.milestoneComplete : ''} ${isLocked ? styles.milestoneLocked : ''}`}
-                        type="button"
-                        aria-pressed={isComplete}
-                        onClick={() => toggleMilestone(milestone.id)}
-                        key={milestone.id}
-                      >
-                        <span className={styles.check} aria-hidden="true">{isComplete ? <>&#10003;</> : null}</span>
-                        <span className={styles.milestoneCopy}>
-                          <small>{isComplete ? 'Complete' : isLocked ? 'Prerequisite blocked' : 'Ready'}</small>
-                          <strong>{milestone.label}</strong>
-                          {milestone.prerequisites.length > 0 && (
-                            <em>Needs {milestone.prerequisites.map((id) => getMilestoneById(id)?.label || id).join(', ')}</em>
-                          )}
-                        </span>
+                      <button type="button" aria-pressed={isComplete} onClick={() => setCompleted((current) => ({ ...current, [milestone.id]: !current[milestone.id] }))} key={milestone.id}>
+                        <span aria-hidden="true">{isComplete ? '✓' : ''}</span>
+                        <span><strong>{milestone.label}</strong><small>{isComplete ? 'Complete' : unmet.length ? `Needs ${unmet.join(', ')}` : 'Ready'}</small></span>
                       </button>
                     );
                   })}
                 </div>
               </section>
-            );
-          })}
-        </section>
+            ))}
+          </div>
+        </details>
 
-        <footer className={styles.footer}><span>MajedGames Companion</span><span>Storage marker: {TAG_WORLD_STORAGE_MARKER}</span></footer>
+        <footer className={styles.footer}><span>MajedGames Companion</span><span>{STORAGE_KEY}</span></footer>
       </div>
     </main>
   );

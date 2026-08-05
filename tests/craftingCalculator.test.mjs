@@ -192,6 +192,7 @@ test('reads the real existing localStorage shape without migration', () => {
   assert.equal(result.migrationNeeded, false);
   assert.deepEqual(result.milestones, { cake_ready: true, ore_mine: false });
   assert.equal(result.inventory.coralumOre, 54);
+  assert.equal(result.selectedQuantity, 1);
 });
 
 test('returns deterministic sorted lists', () => {
