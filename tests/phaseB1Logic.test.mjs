@@ -101,10 +101,12 @@ test('B1 storage writes selected target and inventory without dropping milestone
 
   const next = JSON.parse(writeTagBackWorldSave(current, {
     selectedTarget: 'thermalCore',
+    selectedQuantity: 3,
     inventory: { coal: 12 },
   }));
 
   assert.deepEqual(next.milestones, { cake_ready: true, ore_mine: false });
   assert.equal(next.selectedTarget, 'thermalCore');
+  assert.equal(next.selectedQuantity, 3);
   assert.equal(next.inventory.coal, 12);
 });
