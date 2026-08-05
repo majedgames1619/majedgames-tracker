@@ -29,12 +29,13 @@
 .eyebrow, .componentHeader p, .gatherHeading p, .quickEdit p, .nodeIdentity p { margin: 0 0 7px; color: var(--cyan); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .14em; }
 .hero h1 { max-width: 700px; margin: 0; font-size: clamp(34px, 5vw, 62px); line-height: .98; letter-spacing: -.045em; }
 .hero > div:first-child > p:last-child { max-width: 620px; margin: 17px 0 0; color: var(--muted); font-size: 15px; line-height: 1.65; }
-.targetControls { display: grid; grid-template-columns: 1fr 104px; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(13,26,37,.88); box-shadow: 0 18px 60px rgba(0,0,0,.2); }
+.targetControls { display: grid; grid-template-columns: minmax(0, 1fr) auto 104px; gap: 10px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(13,26,37,.88); box-shadow: 0 18px 60px rgba(0,0,0,.2); }
 .targetControls label, .quickEdit label { display: grid; gap: 7px; }
 .targetControls label > span, .quickEdit label > span { color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .1em; }
 .targetControls select, .targetControls input, .quickEdit select, .quickEdit input, .stats input { width: 100%; min-height: 44px; box-sizing: border-box; color: var(--text); border: 1px solid #3b5568; border-radius: 9px; background: #08141e; font: inherit; }
 .targetControls select, .quickEdit select { padding: 0 38px 0 12px; }
 .targetControls input, .quickEdit input, .stats input { padding: 0 10px; }
+.newTargetButton { min-height: 44px; padding: 0 14px; color: #061016; border: 1px solid var(--cyan); border-radius: 9px; background: var(--cyan); font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap; }
 
 .calculator, .gatherSection, .quickEdit, .milestoneBoard { border: 1px solid var(--line); border-radius: 18px; background: rgba(13,26,37,.94); box-shadow: 0 22px 70px rgba(0,0,0,.18); }
 .calculator { overflow: hidden; }
@@ -143,6 +144,10 @@
 .editorHeader h2 { margin: 0; font-size: 20px; }
 .editorHeader > button { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; color: var(--text); border: 1px solid #496577; border-radius: 9px; background: #132736; font-size: 25px; cursor: pointer; }
 .rawToggle { display: flex; gap: 12px; align-items: flex-start; margin: 20px 22px; padding: 14px; border: 1px solid rgba(255,209,102,.35); border-radius: 10px; background: rgba(255,209,102,.07); cursor: pointer; }
+.itemDetails { display: grid; grid-template-columns: 1fr minmax(180px, .55fr); gap: 12px; margin: 20px 22px; }
+.itemDetails label { display: grid; gap: 6px; }
+.itemDetails label > span { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
+.itemDetails input { width: 100%; min-height: 42px; box-sizing: border-box; padding: 0 11px; color: var(--text); border: 1px solid #3b5568; border-radius: 8px; background: #07131c; font: inherit; }
 .rawToggle input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--amber); }
 .rawToggle span { display: grid; gap: 4px; }
 .rawToggle strong { font-size: 13px; }
@@ -166,7 +171,7 @@
 .editorFooter .saveButton { color: #061016; border-color: var(--cyan); background: var(--cyan); }
 .editorFooter .dangerButton { color: #ffd7d3; border-color: rgba(255,143,134,.5); background: rgba(255,143,134,.08); }
 
-.targetControls select:focus-visible, .targetControls input:focus-visible, .quickEdit select:focus-visible, .quickEdit input:focus-visible, .stats input:focus-visible, .gatherAdd input:focus-visible, .gatherAdd button:focus-visible, .breadcrumbs button:focus-visible, .drillButton:focus-visible, .editRecipeButton:focus-visible, .nodeActions button:focus-visible, .milestoneGrid button:focus-visible, .resetButton:focus-visible, .brand:focus-visible, .editorPanel button:focus-visible, .editorPanel input:focus-visible, .editorPanel select:focus-visible { outline: 3px solid rgba(99,230,226,.5); outline-offset: 2px; }
+.targetControls select:focus-visible, .targetControls input:focus-visible, .newTargetButton:focus-visible, .quickEdit select:focus-visible, .quickEdit input:focus-visible, .stats input:focus-visible, .gatherAdd input:focus-visible, .gatherAdd button:focus-visible, .breadcrumbs button:focus-visible, .drillButton:focus-visible, .editRecipeButton:focus-visible, .nodeActions button:focus-visible, .milestoneGrid button:focus-visible, .resetButton:focus-visible, .brand:focus-visible, .editorPanel button:focus-visible, .editorPanel input:focus-visible, .editorPanel select:focus-visible { outline: 3px solid rgba(99,230,226,.5); outline-offset: 2px; }
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 24px; }
@@ -179,7 +184,8 @@
   .page { width: min(100% - 24px, 560px); }
   .worldBadge { font-size: 9px; }
   .hero { padding-top: 36px; }
-  .targetControls { grid-template-columns: 1fr 90px; padding: 11px; }
+  .targetControls { grid-template-columns: minmax(0, 1fr) 90px; padding: 11px; }
+  .newTargetButton { grid-column: 1 / -1; grid-row: 2; }
   .nodeHeading, .gatherHeading, .componentHeader { align-items: stretch; flex-direction: column; }
   .nodeHeading { padding: 18px; }
   .nodeActions { display: grid; grid-template-columns: 1fr 1fr; }
@@ -197,8 +203,8 @@
   .editorBackdrop { align-items: end; padding: 0; }
   .editorPanel { width: 100%; max-height: 94vh; border-radius: 17px 17px 0 0; }
   .editorHeader, .editorFooter { padding-left: 16px; padding-right: 16px; }
-  .rawToggle, .editorTwoColumn, .componentEditor, .newMaterial, .editorErrors { margin-left: 16px; margin-right: 16px; }
-  .editorTwoColumn, .componentRow { grid-template-columns: 1fr; }
+  .rawToggle, .itemDetails, .editorTwoColumn, .componentEditor, .newMaterial, .editorErrors { margin-left: 16px; margin-right: 16px; }
+  .itemDetails, .editorTwoColumn, .componentRow { grid-template-columns: 1fr; }
   .componentRow > button { justify-self: start; min-height: 38px; }
   .newMaterial > div:nth-child(2) { grid-template-columns: 1fr; }
   .editorFooter { grid-template-columns: 1fr 1fr; }

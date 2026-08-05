@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import {
+  createUserTarget,
   createMaterialId,
   recipeRecordFromDraft,
   validateRecipeDraft,
@@ -14,7 +15,10 @@ function starterRows(item, materials) {
   }
   return [{ id: materials.find((material) => material.id !== item.id)?.id || '', quantity: 1 }];
 }
-export default function RecipeEditor({ item, materials, onClose, onSave, onClear }) {
+export default function RecipeEditor({ item, materials, mode = 'edit', isUserCreated = false, onClose, onSave, onClear, onDelete }) {
+  const isCreating = mode === 'create';
+  const [name, setName] = useState(isCreating ? '' : item.name);
+  const [category, setCategory] = useState(isCreating ? '' : (item.category || ''));
   const [isRaw, setIsRaw] = useState(item.isRaw === true);
   const [yieldQuantity, setYieldQuantity] = useState(item.recipe?.yield || 1);
   const [station, setStation] = useState(item.recipe?.station || '');
@@ -63,17 +67,26 @@ export default function RecipeEditor({ item, materials, onClose, onSave, onClear
   function submit(event) {
     event.preventDefault();
     const draft = {
+      category,
       isRaw,
       yield: yieldQuantity,
       station,
       components,
     };
-    const nextErrors = validateRecipeDraft(item.id, draft);
+    const created = isCreating
+      ? createUserTarget(name, draft, allMaterials.map((material) => material.id))
+      : null;
+    const nextErrors = created?.errors || validateRecipeDraft(item.id, draft);
     if (nextErrors.length) {
       setErrors(nextErrors);
       return;
     }
-    onSave(item.id, recipeRecordFromDraft(item.name, draft), pendingMaterials);
+    onSave(
+      created?.id || item.id,
+      created?.record || recipeRecordFromDraft(name, draft),
+      pendingMaterials,
+      { isCreating },
+    );
   }
 
   return (
@@ -86,10 +99,28 @@ export default function RecipeEditor({ item, materials, onClose, onSave, onClear
         <div className={styles.editorHeader}>
           <div>
             <p>Per-world recipe override</p>
-            <h2 id="recipe-editor-title">{item.recipe ? 'Edit' : 'Add'} recipe · {item.name}</h2>
+            <h2 id="recipe-editor-title">{isCreating ? 'Add new target' : `${item.recipe ? 'Edit' : 'Add'} recipe · ${item.name}`}</h2>
           </div>
           <button type="button" aria-label="Close recipe editor" onClick={onClose}>×</button>
         </div>
+
+        {(isCreating || isUserCreated) && (
+          <div className={styles.itemDetails}>
+            <label>
+              <span>Name</span>
+              <input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Ancient Workbench" />
+            </label>
+            <label>
+              <span>Type / category <small>Optional</small></span>
+              <input list="item-category-options" value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Item" />
+              <datalist id="item-category-options">
+                <option value="Building / Machine" />
+                <option value="Item" />
+                <option value="Component" />
+              </datalist>
+            </label>
+          </div>
+        )}
 
         <label className={styles.rawToggle}>
           <input type="checkbox" checked={isRaw} onChange={(event) => setIsRaw(event.target.checked)} />
@@ -115,7 +146,7 @@ export default function RecipeEditor({ item, materials, onClose, onSave, onClear
                 <div className={styles.componentRow} key={`${index}-${component.id}`}>
                   <label>
                     <span>Material {index + 1}</span>
-                    <select autoFocus={index === 0} value={component.id} onChange={(event) => updateComponent(index, 'id', event.target.value)}>
+                    <select autoFocus={!isCreating && index === 0} value={component.id} onChange={(event) => updateComponent(index, 'id', event.target.value)}>
                       <option value="">Choose a material</option>
                       {allMaterials.map((material) => <option value={material.id} key={material.id}>{material.name}</option>)}
                     </select>
@@ -147,10 +178,12 @@ export default function RecipeEditor({ item, materials, onClose, onSave, onClear
         {errors.length > 0 && <ul className={styles.editorErrors} role="alert">{errors.map((error) => <li key={error}>{error}</li>)}</ul>}
 
         <div className={styles.editorFooter}>
-          {(item.recipe || item.isRaw) && <button className={styles.dangerButton} type="button" onClick={() => onClear(item)}>{item.recipe ? 'Remove recipe' : 'Mark Recipe Needed'}</button>}
+          {isUserCreated
+            ? <button className={styles.dangerButton} type="button" onClick={() => onDelete(item)}>Delete item</button>
+            : (item.recipe || item.isRaw) && <button className={styles.dangerButton} type="button" onClick={() => onClear(item)}>{item.recipe ? 'Remove recipe' : 'Mark Recipe Needed'}</button>}
           <span />
           <button type="button" onClick={onClose}>Cancel</button>
-          <button className={styles.saveButton} type="submit">Save {isRaw ? 'classification' : 'recipe'}</button>
+          <button className={styles.saveButton} type="submit">{isCreating ? 'Create & select' : `Save ${isRaw ? 'classification' : 'recipe'}`}</button>
         </div>
       </form>
     </div>

@@ -37,6 +37,7 @@ export function normalizeUserRecipes(source = {}) {
         const isRaw = value.isRaw === true;
         return [id, {
           name: cleanName(value.name, id),
+          category: cleanName(value.category, 'Item'),
           isRaw,
           recipe: isRaw ? null : normalizeRecipe(value.recipe),
         }];
@@ -64,6 +65,7 @@ export function mergeUserRecipeProfile(baseProfile, source = {}) {
     nodes.push({
       id,
       name: override.name,
+      category: override.category,
       kind: 'item',
       isRaw: override.isRaw,
       isProtected: false,
@@ -120,6 +122,7 @@ export function recipeRecordFromDraft(name, draft) {
   const isRaw = draft.isRaw === true;
   return {
     name: cleanName(name),
+    category: cleanName(draft.category, 'Item'),
     isRaw,
     recipe: isRaw ? null : {
       yield: positiveNumber(draft.yield, 1),
@@ -129,5 +132,20 @@ export function recipeRecordFromDraft(name, draft) {
       })),
       station: cleanName(draft.station) || null,
     },
+  };
+}
+
+export function createUserTarget(name, draft, existingIds = []) {
+  const itemName = cleanName(name);
+  if (!itemName) return { errors: ['Enter a name for the new item.'] };
+
+  const id = createMaterialId(itemName, existingIds);
+  const errors = validateRecipeDraft(id, draft);
+  if (errors.length) return { errors };
+
+  return {
+    id,
+    record: recipeRecordFromDraft(itemName, draft),
+    errors: [],
   };
 }

@@ -24,6 +24,7 @@ import styles from './page.module.css';
 const STORAGE_KEY = tagWorldProfile.storageKey;
 const DEFAULT_TARGET_ID = 'weapon-line';
 const CATEGORY_ORDER = ['Base', 'Production', 'Progression'];
+const NEW_TARGET_DRAFT_ID = '__new-target__';
 
 function normalizeQuantity(value, fallback = 0) {
   const quantity = Number.parseInt(String(value).replace(/\D/g, ''), 10);
@@ -93,6 +94,7 @@ export default function MidgameBoard() {
   const [completed, setCompleted] = useState(emptyMilestones);
   const [storageReady, setStorageReady] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
+  const [isCreatingTarget, setIsCreatingTarget] = useState(false);
   const [gatherAmounts, setGatherAmounts] = useState({});
 
   useEffect(() => {
@@ -159,6 +161,15 @@ export default function MidgameBoard() {
   const gather = useMemo(() => getGatherSummary(originalResult), [originalResult]);
   const completedCount = Object.values(completed).filter(Boolean).length;
   const editingItem = editingItemId ? nodeMap.get(editingItemId) : null;
+  const baseNodeIds = useMemo(() => new Set(tagWorldProfile.nodes.map((node) => node.id)), []);
+  const newTargetDraft = useMemo(() => ({
+    id: NEW_TARGET_DRAFT_ID,
+    name: '',
+    category: '',
+    kind: 'item',
+    isRaw: false,
+    recipe: null,
+  }), []);
 
   function updateInventory(id, value) {
     setInventory((current) => ({ ...current, [id]: normalizeQuantity(value) }));
@@ -203,7 +214,7 @@ export default function MidgameBoard() {
     setPath((current) => current.slice(0, index + 1));
   }
 
-  function saveRecipe(itemId, record, pendingMaterials) {
+  function saveRecipe(itemId, record, pendingMaterials, options = {}) {
     setUserRecipes((current) => ({
       ...current,
       ...Object.fromEntries(pendingMaterials.map((material) => [material.id, {
@@ -214,6 +225,12 @@ export default function MidgameBoard() {
       [itemId]: record,
     }));
     setEditingItemId(null);
+    setIsCreatingTarget(false);
+    if (options.isCreating) {
+      setSelectedTargetId(itemId);
+      setPath([itemId]);
+      setQuickEditId(itemId);
+    }
   }
 
   function clearRecipe(item) {
@@ -226,6 +243,27 @@ export default function MidgameBoard() {
       },
     }));
     setEditingItemId(null);
+  }
+
+  function deleteUserItem(item) {
+    setUserRecipes((current) => {
+      const next = { ...current };
+      delete next[item.id];
+      return next;
+    });
+    if (selectedTargetId === item.id) {
+      setSelectedTargetId(DEFAULT_TARGET_ID);
+      setPath([DEFAULT_TARGET_ID]);
+      setQuickEditId(DEFAULT_TARGET_ID);
+    } else {
+      setPath((current) => current.filter((id) => id !== item.id));
+    }
+    setEditingItemId(null);
+  }
+
+  function closeEditor() {
+    setEditingItemId(null);
+    setIsCreatingTarget(false);
   }
 
   return (
@@ -252,6 +290,7 @@ export default function MidgameBoard() {
                 {targetOptions.map((target) => <option value={target.id} key={target.id}>{target.name}</option>)}
               </select>
             </label>
+            <button className={styles.newTargetButton} type="button" onClick={() => setIsCreatingTarget(true)}>+ New item</button>
             <label className={styles.quantityField}>
               <span>Quantity</span>
               <input type="number" min="1" step="1" inputMode="numeric" value={selectedQuantity} onChange={(event) => setTargetQuantity(event.target.value)} />
@@ -276,12 +315,13 @@ export default function MidgameBoard() {
             <div className={styles.nodeIdentity}>
               <ItemTile item={currentNode} />
               <div>
-                <p>{currentNode.kind === 'building' ? 'Building / machine' : 'Current component'}</p>
+                <p>{currentNode.category || (currentNode.kind === 'building' ? 'Building / machine' : 'Current component')}</p>
                 <h2 id="current-node-title">{currentNode.name}</h2>
                 {currentNode.recipe?.station && <small className={styles.station}>Made in: {currentNode.recipe.station}</small>}
               </div>
             </div>
             <div className={styles.nodeActions}>
+              <span><small>Have</small><strong>{currentBreakdown.have}</strong></span>
               <span><small>Need</small><strong>{currentBreakdown.need}</strong></span>
               <span><small>Craft</small><strong>{currentBreakdown.missing}</strong></span>
               {!currentNode.isRaw && <button className={styles.nodeEditButton} type="button" onClick={() => setEditingItemId(currentNode.id)}>{currentNode.recipe ? 'Edit recipe' : 'Add recipe'}</button>}
@@ -428,14 +468,17 @@ export default function MidgameBoard() {
         </details>
 
         <footer className={styles.footer}><span>MajedGames Companion</span><span>{STORAGE_KEY}</span></footer>
-        {editingItem && (
+        {(editingItem || isCreatingTarget) && (
           <RecipeEditor
-            key={editingItem.id}
-            item={editingItem}
+            key={isCreatingTarget ? NEW_TARGET_DRAFT_ID : editingItem.id}
+            item={isCreatingTarget ? newTargetDraft : editingItem}
             materials={inventoryItems}
-            onClose={() => setEditingItemId(null)}
+            mode={isCreatingTarget ? 'create' : 'edit'}
+            isUserCreated={!isCreatingTarget && !baseNodeIds.has(editingItem.id)}
+            onClose={closeEditor}
             onSave={saveRecipe}
             onClear={clearRecipe}
+            onDelete={deleteUserItem}
           />
         )}
       </div>
