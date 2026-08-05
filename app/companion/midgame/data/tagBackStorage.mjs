@@ -1,4 +1,5 @@
 import { TAG_WORLD_ID, TAG_WORLD_STORAGE_KEY, tagWorldProfile } from './recipeGraph.mjs';
+import { normalizeUserRecipes } from './userRecipeOverrides.mjs';
 
 export const TAG_WORLD_STORAGE_MARKER = 'tagback-midgame-task-a';
 
@@ -47,6 +48,7 @@ export function readTagBackWorldSave(rawValue, profile = tagWorldProfile) {
     inventory: normalizeInventory(profile.inventory, parsed.inventory),
     selectedTarget: typeof parsed.selectedTarget === 'string' ? parsed.selectedTarget : null,
     selectedQuantity: normalizeSelectedQuantity(parsed.selectedQuantity),
+    userRecipes: normalizeUserRecipes(parsed.userRecipes),
     migrationNeeded: false,
     original: parsed,
   };
@@ -74,6 +76,12 @@ export function writeTagBackWorldSave(existingRawValue, updates = {}, profile = 
     next.selectedQuantity = normalizeSelectedQuantity(updates.selectedQuantity);
   } else if (current.original.selectedQuantity !== undefined) {
     next.selectedQuantity = current.selectedQuantity;
+  }
+
+  if (updates.userRecipes !== undefined) {
+    next.userRecipes = normalizeUserRecipes(updates.userRecipes);
+  } else if (current.original.userRecipes !== undefined) {
+    next.userRecipes = current.userRecipes;
   }
 
   return JSON.stringify(next);

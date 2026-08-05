@@ -13,7 +13,7 @@ const materialDefinitions = [
   ['computer', 'Computer', { recipe: { yield: 1, inputs: { circuitBoard: 2, plasteel: 3, bioBattery: 2, carbonFiber: 2 } } }],
   ['coralumOre', 'Coralum Ore (Red Ore)', { isRaw: true }],
   ['coralumIngot', 'Coralum Ingot (Red Ore Ingot)', {}],
-  ['corrosiveSolvent', 'Corrosive Solvent', { isRaw: true }],
+  ['corrosiveSolvent', 'Corrosive Solvent', {}],
   ['cryogenicCoolant', 'Cryogenic Coolant', { isRaw: true }],
   ['electricOrgan', 'Electric Organ', { isRaw: true }],
   ['flameOrgan', 'Flame Organ', { isRaw: true }],

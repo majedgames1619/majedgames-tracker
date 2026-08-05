@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import RecipeEditor from './RecipeEditor';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
   buildBreadcrumbs,
@@ -13,6 +14,7 @@ import {
 } from './data/phaseB2Logic.mjs';
 import { tagWorldProfile } from './data/recipeGraph.mjs';
 import { readTagBackWorldSave, writeTagBackWorldSave } from './data/tagBackStorage.mjs';
+import { mergeUserRecipeProfile } from './data/userRecipeOverrides.mjs';
 import { midgameMilestones } from './midgameMilestones';
 import styles from './page.module.css';
 
@@ -61,27 +63,38 @@ function StatusPill({ status }) {
 }
 
 export default function MidgameBoard() {
-  const nodeMap = useMemo(() => new Map(tagWorldProfile.nodes.map((node) => [node.id, node])), []);
-  const targetOptions = useMemo(() => getTargetOptions(tagWorldProfile), []);
-  const inventoryItems = useMemo(
-    () => tagWorldProfile.nodes.filter((node) => node.kind === 'item').sort((a, b) => a.name.localeCompare(b.name)),
-    [],
-  );
-
+  const [userRecipes, setUserRecipes] = useState({});
   const [inventory, setInventory] = useState(tagWorldProfile.inventory);
+  const activeProfile = useMemo(() => mergeUserRecipeProfile(tagWorldProfile, userRecipes), [userRecipes]);
+  const nodeMap = useMemo(() => new Map(activeProfile.nodes.map((node) => [node.id, node])), [activeProfile]);
+  const targetOptions = useMemo(() => getTargetOptions(activeProfile), [activeProfile]);
+  const inventoryItems = useMemo(() => {
+    const items = activeProfile.nodes.filter((node) => node.kind === 'item');
+    const knownIds = new Set(items.map((item) => item.id));
+    return [
+      ...items,
+      ...Object.keys(inventory)
+        .filter((id) => !knownIds.has(id))
+        .map((id) => ({ id, name: id, kind: 'item', isRaw: false, recipe: null })),
+    ].sort((a, b) => a.name.localeCompare(b.name));
+  }, [activeProfile, inventory]);
+
   const [selectedTargetId, setSelectedTargetId] = useState(DEFAULT_TARGET_ID);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [path, setPath] = useState([DEFAULT_TARGET_ID]);
   const [quickEditId, setQuickEditId] = useState('coralumIngot');
   const [completed, setCompleted] = useState(emptyMilestones);
   const [storageReady, setStorageReady] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
 
   useEffect(() => {
     try {
       const save = readTagBackWorldSave(window.localStorage.getItem(STORAGE_KEY));
-      const knownTargets = new Set(targetOptions.map((target) => target.id));
+      const savedProfile = mergeUserRecipeProfile(tagWorldProfile, save.userRecipes);
+      const knownTargets = new Set(savedProfile.nodes.map((node) => node.id));
       const nextTarget = knownTargets.has(save.selectedTarget) ? save.selectedTarget : DEFAULT_TARGET_ID;
 
+      setUserRecipes(save.userRecipes);
       setInventory(save.inventory);
       setCompleted(normalizeMilestones(save.milestones));
       setSelectedTargetId(nextTarget);
@@ -92,7 +105,7 @@ export default function MidgameBoard() {
     } finally {
       setStorageReady(true);
     }
-  }, [targetOptions]);
+  }, []);
 
   useEffect(() => {
     if (!storageReady) return;
@@ -103,15 +116,16 @@ export default function MidgameBoard() {
         milestones: completed,
         selectedTarget: selectedTargetId,
         selectedQuantity,
+        userRecipes,
       }));
     } catch {
       // In-session edits still work when localStorage is unavailable.
     }
-  }, [completed, inventory, selectedQuantity, selectedTargetId, storageReady]);
+  }, [completed, inventory, selectedQuantity, selectedTargetId, storageReady, userRecipes]);
 
   const originalResult = useMemo(
-    () => calculateTarget(tagWorldProfile, selectedTargetId, { inventory, quantity: selectedQuantity }),
-    [inventory, selectedQuantity, selectedTargetId],
+    () => calculateTarget(activeProfile, selectedTargetId, { inventory, quantity: selectedQuantity }),
+    [activeProfile, inventory, selectedQuantity, selectedTargetId],
   );
   const currentId = path[path.length - 1];
   const currentNode = nodeMap.get(currentId) || nodeMap.get(selectedTargetId);
@@ -121,11 +135,11 @@ export default function MidgameBoard() {
   const levelResult = useMemo(() => {
     if (currentNode.id === selectedTargetId) return originalResult;
     if (currentCraftQuantity === 0) return emptyLevelResult;
-    return calculateTarget(tagWorldProfile, currentNode.id, {
+    return calculateTarget(activeProfile, currentNode.id, {
       inventory: { ...inventory, [currentNode.id]: 0 },
       quantity: currentCraftQuantity,
     });
-  }, [currentCraftQuantity, currentNode.id, emptyLevelResult, inventory, originalResult, selectedTargetId]);
+  }, [activeProfile, currentCraftQuantity, currentNode.id, emptyLevelResult, inventory, originalResult, selectedTargetId]);
   const cards = useMemo(
     () => buildCurrentLevelCards(currentNode, levelResult, nodeMap),
     [currentNode, levelResult, nodeMap],
@@ -136,6 +150,7 @@ export default function MidgameBoard() {
   );
   const gather = useMemo(() => getGatherSummary(originalResult), [originalResult]);
   const completedCount = Object.values(completed).filter(Boolean).length;
+  const editingItem = editingItemId ? nodeMap.get(editingItemId) : null;
 
   function updateInventory(id, value) {
     setInventory((current) => ({ ...current, [id]: normalizeQuantity(value) }));
@@ -158,6 +173,31 @@ export default function MidgameBoard() {
 
   function jumpTo(index) {
     setPath((current) => current.slice(0, index + 1));
+  }
+
+  function saveRecipe(itemId, record, pendingMaterials) {
+    setUserRecipes((current) => ({
+      ...current,
+      ...Object.fromEntries(pendingMaterials.map((material) => [material.id, {
+        name: material.name,
+        isRaw: false,
+        recipe: null,
+      }])),
+      [itemId]: record,
+    }));
+    setEditingItemId(null);
+  }
+
+  function clearRecipe(item) {
+    setUserRecipes((current) => ({
+      ...current,
+      [item.id]: {
+        name: item.name,
+        isRaw: false,
+        recipe: null,
+      },
+    }));
+    setEditingItemId(null);
   }
 
   return (
@@ -216,6 +256,7 @@ export default function MidgameBoard() {
             <div className={styles.nodeActions}>
               <span><small>Need</small><strong>{currentBreakdown.need}</strong></span>
               <span><small>Craft</small><strong>{currentBreakdown.missing}</strong></span>
+              <button className={styles.nodeEditButton} type="button" onClick={() => setEditingItemId(currentNode.id)}>{currentNode.recipe ? 'Edit recipe' : currentNode.isRaw ? 'Edit material' : 'Add recipe'}</button>
               <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>← Back</button>
             </div>
           </div>
@@ -242,9 +283,15 @@ export default function MidgameBoard() {
                   <span><small>Craft</small><strong>{card.breakdown.missing}</strong></span>
                 </div>
                 {card.canDrill ? (
-                  <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>
+                  <div className={styles.cardActions}>
+                    <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>
+                    <button className={styles.editRecipeButton} type="button" onClick={() => setEditingItemId(card.id)}>Edit recipe</button>
+                  </div>
                 ) : (
-                  <p className={styles.cardNote}>{card.node.isRaw ? 'Raw material · end of this branch' : 'Recipe data is incomplete'}</p>
+                  <div className={styles.cardActions}>
+                    <p className={styles.cardNote}>{card.node.isRaw ? 'Raw material · end of this branch' : 'Recipe data is incomplete'}</p>
+                    <button className={styles.editRecipeButton} type="button" onClick={() => setEditingItemId(card.id)}>{card.node.isRaw ? 'Edit material' : 'Add recipe'}</button>
+                  </div>
                 )}
               </article>
             ))}
@@ -274,7 +321,7 @@ export default function MidgameBoard() {
           {gather.incomplete.length > 0 && (
             <aside className={styles.recipeWarning} aria-labelledby="recipe-needed-title">
               <div><strong id="recipe-needed-title">Recipe Needed — can’t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
-              <ul>{gather.incomplete.map((item) => <li key={item.id}>{item.name} <strong>{item.missing}</strong></li>)}</ul>
+              <ul>{gather.incomplete.map((item) => <li key={item.id}><span>{item.name} <strong>{item.missing}</strong></span><button type="button" onClick={() => setEditingItemId(item.id)}>Add recipe</button></li>)}</ul>
             </aside>
           )}
           {originalResult.protectedRequired.length > 0 && (
@@ -325,6 +372,16 @@ export default function MidgameBoard() {
         </details>
 
         <footer className={styles.footer}><span>MajedGames Companion</span><span>{STORAGE_KEY}</span></footer>
+        {editingItem && (
+          <RecipeEditor
+            key={editingItem.id}
+            item={editingItem}
+            materials={inventoryItems}
+            onClose={() => setEditingItemId(null)}
+            onSave={saveRecipe}
+            onClear={clearRecipe}
+          />
+        )}
       </div>
     </main>
   );
