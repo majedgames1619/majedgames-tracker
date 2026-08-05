@@ -56,6 +56,7 @@
 .nodeActions small, .stats small { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .09em; }
 .nodeActions strong { margin-top: 2px; font-size: 20px; }
 .nodeActions button, .resetButton { min-height: 44px; padding: 0 15px; color: var(--text); border: 1px solid #3b5568; border-radius: 9px; background: #132736; font: inherit; font-size: 12px; font-weight: 850; cursor: pointer; }
+.nodeActions .nodeEditButton { color: #061016; border-color: var(--cyan); background: var(--cyan); }
 .nodeActions button:disabled { opacity: .38; cursor: not-allowed; }
 
 .componentHeader, .gatherHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 20px 24px 14px; border-top: 1px solid var(--line); }
@@ -79,6 +80,9 @@
 .stats input { min-height: 28px; padding: 0; border: 0; border-bottom: 1px solid #4c6574; border-radius: 0; background: transparent; font-size: 18px; font-weight: 750; }
 .drillButton { display: flex; min-height: 42px; align-items: center; justify-content: space-between; margin-top: auto; padding: 0 12px; color: #061016; border: 0; border-radius: 8px; background: var(--cyan); font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; }
 .cardNote { margin: auto 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.cardActions { display: grid; gap: 7px; margin-top: auto; }
+.cardActions .drillButton { margin-top: 0; }
+.editRecipeButton { min-height: 38px; padding: 0 10px; color: var(--text); border: 1px solid #496577; border-radius: 8px; background: #0b1923; font: inherit; font-size: 11px; font-weight: 850; cursor: pointer; }
 .branchEnd { grid-column: 1 / -1; margin: 0; padding: 22px; color: var(--muted); border: 1px dashed #3b5568; border-radius: 11px; background: rgba(2,10,16,.24); font-size: 13px; }
 
 .gatherSection { margin-top: 18px; overflow: hidden; }
@@ -94,7 +98,8 @@
 .recipeWarning > div { display: grid; gap: 4px; }
 .recipeWarning span { color: #d6c89f; font-size: 11px; }
 .recipeWarning ul { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-end; margin: 0; padding: 0; list-style: none; }
-.recipeWarning li { padding: 6px 8px; border-radius: 7px; background: rgba(0,0,0,.2); font-size: 11px; }
+.recipeWarning li { display: flex; gap: 7px; align-items: center; padding: 6px 8px; border-radius: 7px; background: rgba(0,0,0,.2); font-size: 11px; }
+.recipeWarning li button { min-height: 30px; padding: 0 8px; color: #171006; border: 0; border-radius: 6px; background: var(--amber); font: inherit; font-size: 9px; font-weight: 900; cursor: pointer; }
 .protectedWarning { margin: 0 24px 24px; padding: 12px 14px; color: #f3d8ff; border-left: 3px solid #e5a6ff; background: rgba(229,166,255,.07); font-size: 12px; }
 
 .quickEdit { display: grid; grid-template-columns: 1fr minmax(240px, 340px) 140px; gap: 14px; align-items: end; margin-top: 18px; padding: 18px 24px; }
@@ -117,7 +122,37 @@
 .milestoneGrid small { color: var(--muted); font-size: 9px; line-height: 1.4; }
 .footer { display: flex; justify-content: space-between; padding: 26px 2px 0; color: #6f8592; font-size: 10px; }
 
-.targetControls select:focus-visible, .targetControls input:focus-visible, .quickEdit select:focus-visible, .quickEdit input:focus-visible, .stats input:focus-visible, .breadcrumbs button:focus-visible, .drillButton:focus-visible, .nodeActions button:focus-visible, .milestoneGrid button:focus-visible, .resetButton:focus-visible, .brand:focus-visible { outline: 3px solid rgba(99,230,226,.5); outline-offset: 2px; }
+.editorBackdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: rgba(1,7,11,.82); backdrop-filter: blur(7px); }
+.editorPanel { width: min(760px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; padding: 0; color: var(--text); border: 1px solid #3b5568; border-radius: 17px; background: #0c1923; box-shadow: 0 32px 100px rgba(0,0,0,.55); }
+.editorHeader { position: sticky; z-index: 2; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 20px 22px; border-bottom: 1px solid var(--line); background: #0c1923; }
+.editorHeader p { margin: 0 0 5px; color: var(--cyan); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .13em; }
+.editorHeader h2 { margin: 0; font-size: 20px; }
+.editorHeader > button { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; color: var(--text); border: 1px solid #496577; border-radius: 9px; background: #132736; font-size: 25px; cursor: pointer; }
+.rawToggle { display: flex; gap: 12px; align-items: flex-start; margin: 20px 22px; padding: 14px; border: 1px solid rgba(255,209,102,.35); border-radius: 10px; background: rgba(255,209,102,.07); cursor: pointer; }
+.rawToggle input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--amber); }
+.rawToggle span { display: grid; gap: 4px; }
+.rawToggle strong { font-size: 13px; }
+.rawToggle small, .newMaterial small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.editorTwoColumn { display: grid; grid-template-columns: 180px 1fr; gap: 12px; margin: 0 22px 20px; }
+.editorTwoColumn label, .componentRow label, .newMaterial label { display: grid; gap: 6px; }
+.editorTwoColumn label > span, .componentRow label > span, .newMaterial label > span { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
+.editorTwoColumn input, .componentRow input, .componentRow select, .newMaterial input { width: 100%; min-height: 42px; box-sizing: border-box; padding: 0 11px; color: var(--text); border: 1px solid #3b5568; border-radius: 8px; background: #07131c; font: inherit; }
+.componentEditor { display: grid; gap: 9px; margin: 0 22px 20px; padding: 15px; border: 1px solid var(--line); border-radius: 11px; }
+.componentEditor legend { padding: 0 7px; font-size: 12px; font-weight: 900; }
+.componentRow { display: grid; grid-template-columns: 1fr 120px 80px; gap: 8px; align-items: end; }
+.componentRow > button, .addRowButton, .newMaterial button { min-height: 42px; padding: 0 10px; color: var(--text); border: 1px solid #496577; border-radius: 8px; background: #132736; font: inherit; font-size: 10px; font-weight: 850; cursor: pointer; }
+.addRowButton { justify-self: start; margin-top: 3px; }
+.newMaterial { display: grid; gap: 12px; margin: 0 22px 20px; padding: 15px; border: 1px dashed #496577; border-radius: 11px; background: rgba(99,230,226,.035); }
+.newMaterial > div:first-child { display: grid; gap: 3px; }
+.newMaterial > div:nth-child(2) { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.newMaterial p { margin: 0; color: var(--red); font-size: 11px; }
+.editorErrors { margin: 0 22px 20px; padding: 12px 12px 12px 32px; color: #ffd7d3; border: 1px solid rgba(255,143,134,.4); border-radius: 9px; background: rgba(255,143,134,.08); font-size: 11px; line-height: 1.6; }
+.editorFooter { position: sticky; bottom: 0; display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; padding: 15px 22px; border-top: 1px solid var(--line); background: #0c1923; }
+.editorFooter button { min-height: 42px; padding: 0 14px; color: var(--text); border: 1px solid #496577; border-radius: 8px; background: #132736; font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; }
+.editorFooter .saveButton { color: #061016; border-color: var(--cyan); background: var(--cyan); }
+.editorFooter .dangerButton { color: #ffd7d3; border-color: rgba(255,143,134,.5); background: rgba(255,143,134,.08); }
+
+.targetControls select:focus-visible, .targetControls input:focus-visible, .quickEdit select:focus-visible, .quickEdit input:focus-visible, .stats input:focus-visible, .breadcrumbs button:focus-visible, .drillButton:focus-visible, .editRecipeButton:focus-visible, .nodeActions button:focus-visible, .milestoneGrid button:focus-visible, .resetButton:focus-visible, .brand:focus-visible, .editorPanel button:focus-visible, .editorPanel input:focus-visible, .editorPanel select:focus-visible { outline: 3px solid rgba(99,230,226,.5); outline-offset: 2px; }
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 24px; }
@@ -134,7 +169,7 @@
   .nodeHeading, .gatherHeading, .componentHeader { align-items: stretch; flex-direction: column; }
   .nodeHeading { padding: 18px; }
   .nodeActions { display: grid; grid-template-columns: 1fr 1fr; }
-  .nodeActions button { grid-column: 1 / -1; }
+  .nodeActions button { grid-column: auto; }
   .componentHeader, .gatherHeading { padding: 18px; }
   .componentGrid, .gatherList, .milestoneGrid { grid-template-columns: 1fr; padding-left: 18px; padding-right: 18px; }
   .componentCard { min-height: 230px; }
@@ -145,6 +180,15 @@
   .milestoneBoard > summary { min-height: 86px; padding: 0 18px; }
   .milestoneBody { padding: 0 18px 18px; }
   .footer { flex-direction: column; gap: 5px; }
+  .editorBackdrop { align-items: end; padding: 0; }
+  .editorPanel { width: 100%; max-height: 94vh; border-radius: 17px 17px 0 0; }
+  .editorHeader, .editorFooter { padding-left: 16px; padding-right: 16px; }
+  .rawToggle, .editorTwoColumn, .componentEditor, .newMaterial, .editorErrors { margin-left: 16px; margin-right: 16px; }
+  .editorTwoColumn, .componentRow { grid-template-columns: 1fr; }
+  .componentRow > button { justify-self: start; min-height: 38px; }
+  .newMaterial > div:nth-child(2) { grid-template-columns: 1fr; }
+  .editorFooter { grid-template-columns: 1fr 1fr; }
+  .editorFooter > span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
