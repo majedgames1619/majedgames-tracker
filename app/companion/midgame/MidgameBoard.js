@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import RecipeEditor from './RecipeEditor';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
+  COMPONENT_CLICK_ACTION,
   buildBreadcrumbs,
   buildCurrentLevelCards,
   getBreakdown,
@@ -171,6 +172,17 @@ export default function MidgameBoard() {
     setQuickEditId(id);
   }
 
+  function openIncompleteItem(id) {
+    setPath((current) => current[current.length - 1] === id ? current : [...current, id]);
+    setQuickEditId(id);
+    setEditingItemId(id);
+  }
+
+  function activateComponent(card) {
+    if (card.clickAction === COMPONENT_CLICK_ACTION.DRILL_IN) drillTo(card.id);
+    if (card.clickAction === COMPONENT_CLICK_ACTION.OPEN_EDITOR) openIncompleteItem(card.id);
+  }
+
   function jumpTo(index) {
     setPath((current) => current.slice(0, index + 1));
   }
@@ -256,7 +268,7 @@ export default function MidgameBoard() {
             <div className={styles.nodeActions}>
               <span><small>Need</small><strong>{currentBreakdown.need}</strong></span>
               <span><small>Craft</small><strong>{currentBreakdown.missing}</strong></span>
-              <button className={styles.nodeEditButton} type="button" onClick={() => setEditingItemId(currentNode.id)}>{currentNode.recipe ? 'Edit recipe' : currentNode.isRaw ? 'Edit material' : 'Add recipe'}</button>
+              {!currentNode.isRaw && <button className={styles.nodeEditButton} type="button" onClick={() => setEditingItemId(currentNode.id)}>{currentNode.recipe ? 'Edit recipe' : 'Add recipe'}</button>}
               <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>← Back</button>
             </div>
           </div>
@@ -268,7 +280,15 @@ export default function MidgameBoard() {
 
           <div className={styles.componentGrid}>
             {cards.map((card) => (
-              <article className={`${styles.componentCard} ${styles[getStatusTone(card.status)]}`} key={card.id}>
+              <article className={`${styles.componentCard} ${card.isNavigable ? styles.componentCardNavigable : ''} ${styles[getStatusTone(card.status)]}`} key={card.id}>
+                {card.isNavigable && (
+                  <button
+                    className={styles.cardClickTarget}
+                    type="button"
+                    aria-label={`${card.clickAction === COMPONENT_CLICK_ACTION.DRILL_IN ? 'Open recipe for' : 'Add recipe for'} ${card.node.name}`}
+                    onClick={() => activateComponent(card)}
+                  />
+                )}
                 <div className={styles.cardTop}>
                   <ItemTile item={card.node} />
                   <StatusPill status={card.status} />
@@ -287,11 +307,13 @@ export default function MidgameBoard() {
                     <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>
                     <button className={styles.editRecipeButton} type="button" onClick={() => setEditingItemId(card.id)}>Edit recipe</button>
                   </div>
-                ) : (
+                ) : card.clickAction === COMPONENT_CLICK_ACTION.OPEN_EDITOR ? (
                   <div className={styles.cardActions}>
-                    <p className={styles.cardNote}>{card.node.isRaw ? 'Raw material · end of this branch' : 'Recipe data is incomplete'}</p>
-                    <button className={styles.editRecipeButton} type="button" onClick={() => setEditingItemId(card.id)}>{card.node.isRaw ? 'Edit material' : 'Add recipe'}</button>
+                    <p className={styles.cardNote}>Recipe data is incomplete</p>
+                    <button className={styles.editRecipeButton} type="button" onClick={() => openIncompleteItem(card.id)}>Add recipe</button>
                   </div>
+                ) : (
+                  <p className={styles.cardNote}>Raw material · end of this branch</p>
                 )}
               </article>
             ))}
@@ -321,7 +343,7 @@ export default function MidgameBoard() {
           {gather.incomplete.length > 0 && (
             <aside className={styles.recipeWarning} aria-labelledby="recipe-needed-title">
               <div><strong id="recipe-needed-title">Recipe Needed — can’t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
-              <ul>{gather.incomplete.map((item) => <li key={item.id}><span>{item.name} <strong>{item.missing}</strong></span><button type="button" onClick={() => setEditingItemId(item.id)}>Add recipe</button></li>)}</ul>
+              <ul>{gather.incomplete.map((item) => <li key={item.id}><span>{item.name} <strong>{item.missing}</strong></span><button type="button" onClick={() => openIncompleteItem(item.id)}>Add recipe</button></li>)}</ul>
             </aside>
           )}
           {originalResult.protectedRequired.length > 0 && (
