@@ -5,6 +5,11 @@ import { useEffect, useMemo, useState } from 'react';
 import RecipeEditor from './RecipeEditor';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
+  filterInventoryMaterials,
+  getInventoryMaterials,
+  saveInventoryQuantity,
+} from './data/inventoryManagement.mjs';
+import {
   CARD_STATUS,
   COMPONENT_CLICK_ACTION,
   addGatheredInventory,
@@ -73,19 +78,19 @@ function CompletedPill() {
 export default function MidgameBoard() {
   const [userRecipes, setUserRecipes] = useState({});
   const [inventory, setInventory] = useState(tagWorldProfile.inventory);
+  const [activeScreen, setActiveScreen] = useState('calculator');
+  const [inventorySearch, setInventorySearch] = useState('');
   const activeProfile = useMemo(() => mergeUserRecipeProfile(tagWorldProfile, userRecipes), [userRecipes]);
   const nodeMap = useMemo(() => new Map(activeProfile.nodes.map((node) => [node.id, node])), [activeProfile]);
   const targetOptions = useMemo(() => getTargetOptions(activeProfile), [activeProfile]);
-  const inventoryItems = useMemo(() => {
-    const items = activeProfile.nodes.filter((node) => node.kind === 'item');
-    const knownIds = new Set(items.map((item) => item.id));
-    return [
-      ...items,
-      ...Object.keys(inventory)
-        .filter((id) => !knownIds.has(id))
-        .map((id) => ({ id, name: id, kind: 'item', isRaw: false, recipe: null })),
-    ].sort((a, b) => a.name.localeCompare(b.name));
-  }, [activeProfile, inventory]);
+  const inventoryItems = useMemo(
+    () => getInventoryMaterials(activeProfile, inventory),
+    [activeProfile, inventory],
+  );
+  const filteredInventoryItems = useMemo(
+    () => filterInventoryMaterials(inventoryItems, inventorySearch),
+    [inventoryItems, inventorySearch],
+  );
 
   const [selectedTargetId, setSelectedTargetId] = useState(DEFAULT_TARGET_ID);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
@@ -173,6 +178,32 @@ export default function MidgameBoard() {
 
   function updateInventory(id, value) {
     setInventory((current) => ({ ...current, [id]: normalizeQuantity(value) }));
+  }
+
+  function updateManagedInventory(id, value) {
+    try {
+      const saved = saveInventoryQuantity(
+        window.localStorage.getItem(STORAGE_KEY),
+        id,
+        value,
+        activeProfile,
+      );
+      if (!saved) return;
+      window.localStorage.setItem(STORAGE_KEY, saved.rawValue);
+      setInventory(saved.inventory);
+    } catch {
+      // Invalid values and unavailable browser storage leave inventory unchanged.
+    }
+  }
+
+  function returnToCalculator() {
+    try {
+      const saved = readTagBackWorldSave(window.localStorage.getItem(STORAGE_KEY), activeProfile);
+      setInventory(saved.inventory);
+    } catch {
+      // The in-memory inventory remains current when localStorage is unavailable.
+    }
+    setActiveScreen('calculator');
   }
 
   function addGathered(id) {
@@ -266,6 +297,74 @@ export default function MidgameBoard() {
     setIsCreatingTarget(false);
   }
 
+  if (activeScreen === 'inventory') {
+    return (
+      <main className={styles.shell}>
+        <div className={styles.page}>
+          <header className={styles.header}>
+            <Link className={styles.brand} href="/companion" aria-label="Return to MajedGames Companion">
+              <span className={styles.brandMark} aria-hidden="true">MG</span>
+              <span><strong>MajedGames</strong><small>Companion</small></span>
+            </Link>
+            <span className={styles.worldBadge}>TAG World · Phase B2</span>
+          </header>
+
+          <section className={styles.inventoryScreen} aria-labelledby="inventory-title">
+            <div className={styles.inventoryHero}>
+              <div>
+                <p className={styles.eyebrow}>TAG World · auto-saved</p>
+                <h1 id="inventory-title">Inventory management</h1>
+                <p>Set the owned total for every known material before you start crafting.</p>
+              </div>
+              <button className={styles.inventoryBackButton} type="button" onClick={returnToCalculator}>← Back to calculator</button>
+            </div>
+
+            <label className={styles.inventorySearch} htmlFor="inventory-search">
+              <span>Search materials</span>
+              <input
+                id="inventory-search"
+                type="search"
+                placeholder="Search by material name…"
+                value={inventorySearch}
+                onChange={(event) => setInventorySearch(event.target.value)}
+              />
+            </label>
+
+            <div className={styles.inventoryListHeading} aria-live="polite">
+              <strong>{filteredInventoryItems.length} {filteredInventoryItems.length === 1 ? 'material' : 'materials'}</strong>
+              <span>Changes save immediately</span>
+            </div>
+            {filteredInventoryItems.length > 0 ? (
+              <ul className={styles.inventoryList}>
+                {filteredInventoryItems.map((item) => (
+                  <li key={item.id}>
+                    <ItemTile item={item} />
+                    <span className={styles.inventoryItemName}>{item.name}</span>
+                    <label>
+                      <span>Owned</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        inputMode="decimal"
+                        aria-label={`Owned ${item.name}`}
+                        value={inventory[item.id] ?? 0}
+                        onChange={(event) => updateManagedInventory(item.id, event.target.value)}
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.inventoryEmpty}>No materials match “{inventorySearch}”.</p>
+            )}
+          </section>
+          <footer className={styles.footer}><span>MajedGames Companion</span><span>{STORAGE_KEY}</span></footer>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.shell}>
       <div className={styles.page}>
@@ -295,6 +394,7 @@ export default function MidgameBoard() {
               <span>Quantity</span>
               <input type="number" min="1" step="1" inputMode="numeric" value={selectedQuantity} onChange={(event) => setTargetQuantity(event.target.value)} />
             </label>
+            <button className={styles.manageInventoryButton} type="button" onClick={() => setActiveScreen('inventory')}>Manage inventory</button>
           </div>
         </section>
 
