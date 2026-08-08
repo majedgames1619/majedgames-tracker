@@ -64,4 +64,3 @@ test('rejects negative and invalid quantities without producing a stored value',
   assert.equal(saveInventoryQuantity(original, 'coal', '', tagWorldProfile), null);
   assert.equal(readTagBackWorldSave(original).inventory.coal, 7);
 });
-
