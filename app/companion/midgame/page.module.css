@@ -36,6 +36,7 @@
 .targetControls select, .quickEdit select { padding: 0 38px 0 12px; }
 .targetControls input, .quickEdit input, .stats input { padding: 0 10px; }
 .newTargetButton { min-height: 44px; padding: 0 14px; color: #061016; border: 1px solid var(--cyan); border-radius: 9px; background: var(--cyan); font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+.manageInventoryButton { grid-column: 1 / -1; min-height: 44px; padding: 0 14px; color: var(--cyan); border: 1px solid rgba(99,230,226,.55); border-radius: 9px; background: rgba(99,230,226,.08); font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; }
 
 .calculator, .gatherSection, .quickEdit, .milestoneBoard { border: 1px solid var(--line); border-radius: 18px; background: rgba(13,26,37,.94); box-shadow: 0 22px 70px rgba(0,0,0,.18); }
 .calculator { overflow: hidden; }
@@ -118,6 +119,22 @@
 .protectedWarning { margin: 0 24px 24px; padding: 12px 14px; color: #f3d8ff; border-left: 3px solid #e5a6ff; background: rgba(229,166,255,.07); font-size: 12px; }
 
 .quickEdit { display: grid; grid-template-columns: 1fr minmax(240px, 340px) 140px; gap: 14px; align-items: end; margin-top: 18px; padding: 18px 24px; }
+.inventoryScreen { margin-top: 34px; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: rgba(13,26,37,.94); box-shadow: 0 22px 70px rgba(0,0,0,.18); }
+.inventoryHero { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; padding: 30px; border-bottom: 1px solid var(--line); }
+.inventoryHero h1 { margin: 0; font-size: clamp(32px, 5vw, 54px); letter-spacing: -.04em; }
+.inventoryHero > div > p:last-child { max-width: 610px; margin: 13px 0 0; color: var(--muted); line-height: 1.6; }
+.inventoryBackButton { min-height: 48px; padding: 0 17px; color: #061016; border: 1px solid var(--cyan); border-radius: 10px; background: var(--cyan); font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+.inventorySearch { display: grid; gap: 8px; padding: 24px 30px 18px; }
+.inventorySearch span, .inventoryList label span { color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .1em; }
+.inventorySearch input { width: 100%; min-height: 52px; box-sizing: border-box; padding: 0 15px; color: var(--text); border: 1px solid #496577; border-radius: 11px; background: #08141e; font: inherit; font-size: 16px; }
+.inventoryListHeading { display: flex; justify-content: space-between; gap: 18px; padding: 0 30px 13px; color: var(--muted); font-size: 11px; }
+.inventoryListHeading strong { color: var(--text); }
+.inventoryList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0 30px 30px; list-style: none; }
+.inventoryList li { display: grid; grid-template-columns: 54px minmax(0, 1fr) minmax(112px, 140px); gap: 13px; align-items: center; min-height: 82px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #101f2b; }
+.inventoryItemName { font-size: 14px; font-weight: 800; line-height: 1.35; }
+.inventoryList label { display: grid; gap: 5px; }
+.inventoryList input { width: 100%; min-height: 46px; box-sizing: border-box; padding: 0 11px; color: var(--text); border: 1px solid #496577; border-radius: 9px; background: #07131c; font: inherit; font-size: 17px; font-weight: 750; }
+.inventoryEmpty { margin: 0 30px 30px; padding: 28px; color: var(--muted); text-align: center; border: 1px dashed #496577; border-radius: 12px; }
 .milestoneBoard { margin-top: 18px; overflow: hidden; }
 .milestoneBoard > summary { display: flex; min-height: 74px; align-items: center; justify-content: space-between; gap: 20px; padding: 0 24px; cursor: pointer; list-style-position: inside; }
 .milestoneBoard > summary > span:first-of-type { display: inline-grid; gap: 3px; margin-right: auto; }
@@ -171,13 +188,14 @@
 .editorFooter .saveButton { color: #061016; border-color: var(--cyan); background: var(--cyan); }
 .editorFooter .dangerButton { color: #ffd7d3; border-color: rgba(255,143,134,.5); background: rgba(255,143,134,.08); }
 
-.targetControls select:focus-visible, .targetControls input:focus-visible, .newTargetButton:focus-visible, .quickEdit select:focus-visible, .quickEdit input:focus-visible, .stats input:focus-visible, .gatherAdd input:focus-visible, .gatherAdd button:focus-visible, .breadcrumbs button:focus-visible, .drillButton:focus-visible, .editRecipeButton:focus-visible, .nodeActions button:focus-visible, .milestoneGrid button:focus-visible, .resetButton:focus-visible, .brand:focus-visible, .editorPanel button:focus-visible, .editorPanel input:focus-visible, .editorPanel select:focus-visible { outline: 3px solid rgba(99,230,226,.5); outline-offset: 2px; }
+.targetControls select:focus-visible, .targetControls input:focus-visible, .newTargetButton:focus-visible, .manageInventoryButton:focus-visible, .quickEdit select:focus-visible, .quickEdit input:focus-visible, .stats input:focus-visible, .gatherAdd input:focus-visible, .gatherAdd button:focus-visible, .breadcrumbs button:focus-visible, .drillButton:focus-visible, .editRecipeButton:focus-visible, .nodeActions button:focus-visible, .milestoneGrid button:focus-visible, .resetButton:focus-visible, .brand:focus-visible, .editorPanel button:focus-visible, .editorPanel input:focus-visible, .editorPanel select:focus-visible, .inventoryBackButton:focus-visible, .inventorySearch input:focus-visible, .inventoryList input:focus-visible { outline: 3px solid rgba(99,230,226,.5); outline-offset: 2px; }
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 24px; }
   .componentGrid, .gatherList, .milestoneGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .quickEdit { grid-template-columns: 1fr 1fr; }
   .quickEdit > div { grid-column: 1 / -1; }
+  .inventoryList { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
@@ -186,6 +204,7 @@
   .hero { padding-top: 36px; }
   .targetControls { grid-template-columns: minmax(0, 1fr) 90px; padding: 11px; }
   .newTargetButton { grid-column: 1 / -1; grid-row: 2; }
+  .manageInventoryButton { grid-row: 3; }
   .nodeHeading, .gatherHeading, .componentHeader { align-items: stretch; flex-direction: column; }
   .nodeHeading { padding: 18px; }
   .nodeActions { display: grid; grid-template-columns: 1fr 1fr; }
@@ -197,6 +216,16 @@
   .recipeWarning ul { justify-content: flex-start; }
   .protectedWarning { margin-left: 18px; margin-right: 18px; }
   .quickEdit { grid-template-columns: 1fr 100px; padding: 18px; }
+  .inventoryScreen { margin-top: 22px; }
+  .inventoryHero { align-items: stretch; flex-direction: column; padding: 22px 18px; }
+  .inventoryBackButton { width: 100%; }
+  .inventorySearch { padding: 20px 18px 14px; }
+  .inventoryListHeading { padding: 0 18px 12px; }
+  .inventoryList { padding: 0 18px 20px; }
+  .inventoryList li { grid-template-columns: 54px minmax(0, 1fr); min-height: 0; }
+  .inventoryList label { grid-column: 1 / -1; }
+  .inventoryList input { min-height: 52px; font-size: 18px; }
+  .inventoryEmpty { margin: 0 18px 20px; }
   .milestoneBoard > summary { min-height: 86px; padding: 0 18px; }
   .milestoneBody { padding: 0 18px 18px; }
   .footer { flex-direction: column; gap: 5px; }
@@ -214,3 +243,4 @@
 @media (prefers-reduced-motion: reduce) {
   .shell, .shell *, .shell *::before, .shell *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
