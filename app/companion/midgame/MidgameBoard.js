@@ -5,6 +5,11 @@ import { useEffect, useMemo, useState } from 'react';
 import RecipeEditor from './RecipeEditor';
 import { calculateTarget } from './data/craftingCalculator.mjs';
 import {
+  filterInventoryMaterials,
+  getInventoryMaterials,
+  saveInventoryQuantity,
+} from './data/inventoryManagement.mjs';
+import {
   CARD_STATUS,
   COMPONENT_CLICK_ACTION,
   addGatheredInventory,
@@ -73,19 +78,19 @@ function CompletedPill() {
 export default function MidgameBoard() {
   const [userRecipes, setUserRecipes] = useState({});
   const [inventory, setInventory] = useState(tagWorldProfile.inventory);
+  const [activeScreen, setActiveScreen] = useState('calculator');
+  const [inventorySearch, setInventorySearch] = useState('');
   const activeProfile = useMemo(() => mergeUserRecipeProfile(tagWorldProfile, userRecipes), [userRecipes]);
   const nodeMap = useMemo(() => new Map(activeProfile.nodes.map((node) => [node.id, node])), [activeProfile]);
   const targetOptions = useMemo(() => getTargetOptions(activeProfile), [activeProfile]);
-  const inventoryItems = useMemo(() => {
-    const items = activeProfile.nodes.filter((node) => node.kind === 'item');
-    const knownIds = new Set(items.map((item) => item.id));
-    return [
-      ...items,
-      ...Object.keys(inventory)
-        .filter((id) => !knownIds.has(id))
-        .map((id) => ({ id, name: id, kind: 'item', isRaw: false, recipe: null })),
-    ].sort((a, b) => a.name.localeCompare(b.name));
-  }, [activeProfile, inventory]);
+  const inventoryItems = useMemo(
+    () => getInventoryMaterials(activeProfile, inventory),
+    [activeProfile, inventory],
+  );
+  const filteredInventoryItems = useMemo(
+    () => filterInventoryMaterials(inventoryItems, inventorySearch),
+    [inventoryItems, inventorySearch],
+  );
 
   const [selectedTargetId, setSelectedTargetId] = useState(DEFAULT_TARGET_ID);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
@@ -173,6 +178,32 @@ export default function MidgameBoard() {
 
   function updateInventory(id, value) {
     setInventory((current) => ({ ...current, [id]: normalizeQuantity(value) }));
+  }
+
+  function updateManagedInventory(id, value) {
+    try {
+      const saved = saveInventoryQuantity(
+        window.localStorage.getItem(STORAGE_KEY),
+        id,
+        value,
+        activeProfile,
+      );
+      if (!saved) return;
+      window.localStorage.setItem(STORAGE_KEY, saved.rawValue);
+      setInventory(saved.inventory);
+    } catch {
+      // Invalid values and unavailable browser storage leave inventory unchanged.
+    }
+  }
+
+  function returnToCalculator() {
+    try {
+      const saved = readTagBackWorldSave(window.localStorage.getItem(STORAGE_KEY), activeProfile);
+      setInventory(saved.inventory);
+    } catch {
+      // The in-memory inventory remains current when localStorage is unavailable.
+    }
+    setActiveScreen('calculator');
   }
 
   function addGathered(id) {
@@ -266,6 +297,74 @@ export default function MidgameBoard() {
     setIsCreatingTarget(false);
   }
 
+  if (activeScreen === 'inventory') {
+    return (
+      <main className={styles.shell}>
+        <div className={styles.page}>
+          <header className={styles.header}>
+            <Link className={styles.brand} href="/companion" aria-label="Return to MajedGames Companion">
+              <span className={styles.brandMark} aria-hidden="true">MG</span>
+              <span><strong>MajedGames</strong><small>Companion</small></span>
+            </Link>
+            <span className={styles.worldBadge}>TAG World Â· Phase B2</span>
+          </header>
+
+          <section className={styles.inventoryScreen} aria-labelledby="inventory-title">
+            <div className={styles.inventoryHero}>
+              <div>
+                <p className={styles.eyebrow}>TAG World Â· auto-saved</p>
+                <h1 id="inventory-title">Inventory management</h1>
+                <p>Set the owned total for every known material before you start crafting.</p>
+              </div>
+              <button className={styles.inventoryBackButton} type="button" onClick={returnToCalculator}>â† Back to calculator</button>
+            </div>
+
+            <label className={styles.inventorySearch} htmlFor="inventory-search">
+              <span>Search materials</span>
+              <input
+                id="inventory-search"
+                type="search"
+                placeholder="Search by material nameâ€¦"
+                value={inventorySearch}
+                onChange={(event) => setInventorySearch(event.target.value)}
+              />
+            </label>
+
+            <div className={styles.inventoryListHeading} aria-live="polite">
+              <strong>{filteredInventoryItems.length} {filteredInventoryItems.length === 1 ? 'material' : 'materials'}</strong>
+              <span>Changes save immediately</span>
+            </div>
+            {filteredInventoryItems.length > 0 ? (
+              <ul className={styles.inventoryList}>
+                {filteredInventoryItems.map((item) => (
+                  <li key={item.id}>
+                    <ItemTile item={item} />
+                    <span className={styles.inventoryItemName}>{item.name}</span>
+                    <label>
+                      <span>Owned</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        inputMode="decimal"
+                        aria-label={`Owned ${item.name}`}
+                        value={inventory[item.id] ?? 0}
+                        onChange={(event) => updateManagedInventory(item.id, event.target.value)}
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.inventoryEmpty}>No materials match â€œ{inventorySearch}â€.</p>
+            )}
+          </section>
+          <footer className={styles.footer}><span>MajedGames Companion</span><span>{STORAGE_KEY}</span></footer>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.shell}>
       <div className={styles.page}>
@@ -274,7 +373,7 @@ export default function MidgameBoard() {
             <span className={styles.brandMark} aria-hidden="true">MG</span>
             <span><strong>MajedGames</strong><small>Companion</small></span>
           </Link>
-          <span className={styles.worldBadge}>TAG World · Phase B2</span>
+          <span className={styles.worldBadge}>TAG World Â· Phase B2</span>
         </header>
 
         <section className={styles.hero} aria-labelledby="calculator-title">
@@ -295,6 +394,7 @@ export default function MidgameBoard() {
               <span>Quantity</span>
               <input type="number" min="1" step="1" inputMode="numeric" value={selectedQuantity} onChange={(event) => setTargetQuantity(event.target.value)} />
             </label>
+            <button className={styles.manageInventoryButton} type="button" onClick={() => setActiveScreen('inventory')}>Manage inventory</button>
           </div>
         </section>
 
@@ -302,10 +402,10 @@ export default function MidgameBoard() {
           <nav className={styles.breadcrumbs} aria-label="Crafting path">
             {breadcrumbs.map((crumb, index) => (
               <span className={styles.crumbGroup} key={`${crumb.id}-${index}`}>
-                {index > 0 && <span className={styles.chevron} aria-hidden="true">›</span>}
+                {index > 0 && <span className={styles.chevron} aria-hidden="true">â€º</span>}
                 <button type="button" aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined} onClick={() => jumpTo(index)}>
                   <span>{crumb.name}</span>
-                  <small>{crumb.craft} to craft{index === breadcrumbs.length - 1 ? ' · here' : ''}</small>
+                  <small>{crumb.craft} to craft{index === breadcrumbs.length - 1 ? ' Â· here' : ''}</small>
                 </button>
               </span>
             ))}
@@ -325,7 +425,7 @@ export default function MidgameBoard() {
               <span><small>Need</small><strong>{currentBreakdown.need}</strong></span>
               <span><small>Craft</small><strong>{currentBreakdown.missing}</strong></span>
               {!currentNode.isRaw && <button className={styles.nodeEditButton} type="button" onClick={() => setEditingItemId(currentNode.id)}>{currentNode.recipe ? 'Edit recipe' : 'Add recipe'}</button>}
-              <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>← Back</button>
+              <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>â† Back</button>
             </div>
           </div>
 
@@ -378,7 +478,7 @@ export default function MidgameBoard() {
                 </form>
                 {card.canDrill ? (
                   <div className={styles.cardActions}>
-                    <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>
+                    <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">â†’</span></button>
                     <button className={styles.editRecipeButton} type="button" onClick={() => setEditingItemId(card.id)}>Edit recipe</button>
                   </div>
                 ) : card.clickAction === COMPONENT_CLICK_ACTION.OPEN_EDITOR ? (
@@ -387,15 +487,15 @@ export default function MidgameBoard() {
                     <button className={styles.editRecipeButton} type="button" onClick={() => openIncompleteItem(card.id)}>Add recipe</button>
                   </div>
                 ) : (
-                  <p className={styles.cardNote}>Raw material · end of this branch</p>
+                  <p className={styles.cardNote}>Raw material Â· end of this branch</p>
                 )}
               </article>
             ))}
             {cards.length === 0 && (
               <p className={styles.branchEnd}>
                 {currentNode.isRaw
-                  ? 'This is a raw material — you have reached the end of this branch.'
-                  : 'Recipe Needed — direct components cannot be shown until this recipe is known.'}
+                  ? 'This is a raw material â€” you have reached the end of this branch.'
+                  : 'Recipe Needed â€” direct components cannot be shown until this recipe is known.'}
               </p>
             )}
           </div>
@@ -403,8 +503,8 @@ export default function MidgameBoard() {
 
         <section className={styles.gatherSection} aria-labelledby="gather-title">
           <div className={styles.gatherHeading}>
-            <div><p>Original target · always visible</p><h2 id="gather-title">What to Gather</h2></div>
-            <span>For {selectedQuantity} × {nodeMap.get(selectedTargetId)?.name}</span>
+            <div><p>Original target Â· always visible</p><h2 id="gather-title">What to Gather</h2></div>
+            <span>For {selectedQuantity} Ã— {nodeMap.get(selectedTargetId)?.name}</span>
           </div>
           {gather.raw.length > 0 ? (
             <ul className={styles.gatherList}>
@@ -416,7 +516,7 @@ export default function MidgameBoard() {
 
           {gather.incomplete.length > 0 && (
             <aside className={styles.recipeWarning} aria-labelledby="recipe-needed-title">
-              <div><strong id="recipe-needed-title">Recipe Needed — can’t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
+              <div><strong id="recipe-needed-title">Recipe Needed â€” canâ€™t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
               <ul>{gather.incomplete.map((item) => <li key={item.id}><span>{item.name} <strong>{item.missing}</strong></span><button type="button" onClick={() => openIncompleteItem(item.id)}>Add recipe</button></li>)}</ul>
             </aside>
           )}
@@ -456,7 +556,7 @@ export default function MidgameBoard() {
                     const isComplete = completed[milestone.id];
                     return (
                       <button type="button" aria-pressed={isComplete} onClick={() => setCompleted((current) => ({ ...current, [milestone.id]: !current[milestone.id] }))} key={milestone.id}>
-                        <span aria-hidden="true">{isComplete ? '✓' : ''}</span>
+                        <span aria-hidden="true">{isComplete ? 'âœ“' : ''}</span>
                         <span><strong>{milestone.label}</strong><small>{isComplete ? 'Complete' : unmet.length ? `Needs ${unmet.join(', ')}` : 'Ready'}</small></span>
                       </button>
                     );
@@ -485,3 +585,4 @@ export default function MidgameBoard() {
     </main>
   );
 }
+
