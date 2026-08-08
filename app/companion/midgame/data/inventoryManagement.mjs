@@ -46,4 +46,3 @@ export function saveInventoryQuantity(existingRawValue, materialId, value, profi
 
   return { rawValue, inventory: saved.inventory, quantity };
 }
-
