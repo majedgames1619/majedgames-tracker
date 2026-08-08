@@ -306,17 +306,17 @@ export default function MidgameBoard() {
               <span className={styles.brandMark} aria-hidden="true">MG</span>
               <span><strong>MajedGames</strong><small>Companion</small></span>
             </Link>
-            <span className={styles.worldBadge}>TAG World Â· Phase B2</span>
+            <span className={styles.worldBadge}>TAG World · Phase B2</span>
           </header>
 
           <section className={styles.inventoryScreen} aria-labelledby="inventory-title">
             <div className={styles.inventoryHero}>
               <div>
-                <p className={styles.eyebrow}>TAG World Â· auto-saved</p>
+                <p className={styles.eyebrow}>TAG World · auto-saved</p>
                 <h1 id="inventory-title">Inventory management</h1>
                 <p>Set the owned total for every known material before you start crafting.</p>
               </div>
-              <button className={styles.inventoryBackButton} type="button" onClick={returnToCalculator}>â† Back to calculator</button>
+              <button className={styles.inventoryBackButton} type="button" onClick={returnToCalculator}>← Back to calculator</button>
             </div>
 
             <label className={styles.inventorySearch} htmlFor="inventory-search">
@@ -324,7 +324,7 @@ export default function MidgameBoard() {
               <input
                 id="inventory-search"
                 type="search"
-                placeholder="Search by material nameâ€¦"
+                placeholder="Search by material name…"
                 value={inventorySearch}
                 onChange={(event) => setInventorySearch(event.target.value)}
               />
@@ -356,7 +356,7 @@ export default function MidgameBoard() {
                 ))}
               </ul>
             ) : (
-              <p className={styles.inventoryEmpty}>No materials match â€œ{inventorySearch}â€.</p>
+              <p className={styles.inventoryEmpty}>No materials match “{inventorySearch}”.</p>
             )}
           </section>
           <footer className={styles.footer}><span>MajedGames Companion</span><span>{STORAGE_KEY}</span></footer>
@@ -373,7 +373,7 @@ export default function MidgameBoard() {
             <span className={styles.brandMark} aria-hidden="true">MG</span>
             <span><strong>MajedGames</strong><small>Companion</small></span>
           </Link>
-          <span className={styles.worldBadge}>TAG World Â· Phase B2</span>
+          <span className={styles.worldBadge}>TAG World · Phase B2</span>
         </header>
 
         <section className={styles.hero} aria-labelledby="calculator-title">
@@ -402,10 +402,10 @@ export default function MidgameBoard() {
           <nav className={styles.breadcrumbs} aria-label="Crafting path">
             {breadcrumbs.map((crumb, index) => (
               <span className={styles.crumbGroup} key={`${crumb.id}-${index}`}>
-                {index > 0 && <span className={styles.chevron} aria-hidden="true">â€º</span>}
+                {index > 0 && <span className={styles.chevron} aria-hidden="true">›</span>}
                 <button type="button" aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined} onClick={() => jumpTo(index)}>
                   <span>{crumb.name}</span>
-                  <small>{crumb.craft} to craft{index === breadcrumbs.length - 1 ? ' Â· here' : ''}</small>
+                  <small>{crumb.craft} to craft{index === breadcrumbs.length - 1 ? ' · here' : ''}</small>
                 </button>
               </span>
             ))}
@@ -425,7 +425,7 @@ export default function MidgameBoard() {
               <span><small>Need</small><strong>{currentBreakdown.need}</strong></span>
               <span><small>Craft</small><strong>{currentBreakdown.missing}</strong></span>
               {!currentNode.isRaw && <button className={styles.nodeEditButton} type="button" onClick={() => setEditingItemId(currentNode.id)}>{currentNode.recipe ? 'Edit recipe' : 'Add recipe'}</button>}
-              <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>â† Back</button>
+              <button type="button" onClick={() => jumpTo(path.length - 2)} disabled={path.length === 1}>← Back</button>
             </div>
           </div>
 
@@ -478,7 +478,7 @@ export default function MidgameBoard() {
                 </form>
                 {card.canDrill ? (
                   <div className={styles.cardActions}>
-                    <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">â†’</span></button>
+                    <button className={styles.drillButton} type="button" onClick={() => drillTo(card.id)}>Open recipe <span aria-hidden="true">→</span></button>
                     <button className={styles.editRecipeButton} type="button" onClick={() => setEditingItemId(card.id)}>Edit recipe</button>
                   </div>
                 ) : card.clickAction === COMPONENT_CLICK_ACTION.OPEN_EDITOR ? (
@@ -487,15 +487,15 @@ export default function MidgameBoard() {
                     <button className={styles.editRecipeButton} type="button" onClick={() => openIncompleteItem(card.id)}>Add recipe</button>
                   </div>
                 ) : (
-                  <p className={styles.cardNote}>Raw material Â· end of this branch</p>
+                  <p className={styles.cardNote}>Raw material · end of this branch</p>
                 )}
               </article>
             ))}
             {cards.length === 0 && (
               <p className={styles.branchEnd}>
                 {currentNode.isRaw
-                  ? 'This is a raw material â€” you have reached the end of this branch.'
-                  : 'Recipe Needed â€” direct components cannot be shown until this recipe is known.'}
+                  ? 'This is a raw material — you have reached the end of this branch.'
+                  : 'Recipe Needed — direct components cannot be shown until this recipe is known.'}
               </p>
             )}
           </div>
@@ -503,8 +503,8 @@ export default function MidgameBoard() {
 
         <section className={styles.gatherSection} aria-labelledby="gather-title">
           <div className={styles.gatherHeading}>
-            <div><p>Original target Â· always visible</p><h2 id="gather-title">What to Gather</h2></div>
-            <span>For {selectedQuantity} Ã— {nodeMap.get(selectedTargetId)?.name}</span>
+            <div><p>Original target · always visible</p><h2 id="gather-title">What to Gather</h2></div>
+            <span>For {selectedQuantity} × {nodeMap.get(selectedTargetId)?.name}</span>
           </div>
           {gather.raw.length > 0 ? (
             <ul className={styles.gatherList}>
@@ -516,7 +516,7 @@ export default function MidgameBoard() {
 
           {gather.incomplete.length > 0 && (
             <aside className={styles.recipeWarning} aria-labelledby="recipe-needed-title">
-              <div><strong id="recipe-needed-title">Recipe Needed â€” canâ€™t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
+              <div><strong id="recipe-needed-title">Recipe Needed — can’t fully compute</strong><span>Kept separate from raw gathering totals.</span></div>
               <ul>{gather.incomplete.map((item) => <li key={item.id}><span>{item.name} <strong>{item.missing}</strong></span><button type="button" onClick={() => openIncompleteItem(item.id)}>Add recipe</button></li>)}</ul>
             </aside>
           )}
@@ -556,7 +556,7 @@ export default function MidgameBoard() {
                     const isComplete = completed[milestone.id];
                     return (
                       <button type="button" aria-pressed={isComplete} onClick={() => setCompleted((current) => ({ ...current, [milestone.id]: !current[milestone.id] }))} key={milestone.id}>
-                        <span aria-hidden="true">{isComplete ? 'âœ“' : ''}</span>
+                        <span aria-hidden="true">{isComplete ? '✓' : ''}</span>
                         <span><strong>{milestone.label}</strong><small>{isComplete ? 'Complete' : unmet.length ? `Needs ${unmet.join(', ')}` : 'Ready'}</small></span>
                       </button>
                     );
@@ -585,4 +585,3 @@ export default function MidgameBoard() {
     </main>
   );
 }
-
