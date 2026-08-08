@@ -243,4 +243,3 @@
 @media (prefers-reduced-motion: reduce) {
   .shell, .shell *, .shell *::before, .shell *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
-
